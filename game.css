@@ -1,0 +1,539 @@
+/* ==========================================
+   game.css — 解謎、雷達、行囊、徽章（接在 card.css 之後載入）
+   ========================================== */
+
+/* ---------- 卡片上的劇情標記 ---------- */
+.stamp-story-mark {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  font-size: 13px;
+  line-height: 1;
+  opacity: 0.85;
+}
+
+/* ==========================================
+   徽章展示
+   ========================================== */
+.badge-shelf { margin-bottom: 16px; display: grid; gap: 10px; }
+.badge-shelf:empty { display: none; }
+
+.badge-feature {
+  --pct: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px 14px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: linear-gradient(120deg, #fff 0%, var(--gold-light) 100%);
+  border: 1.5px solid var(--gold-deep);
+  border-radius: 14px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.badge-feature.earned {
+  background: linear-gradient(120deg, #6B1F14 0%, var(--red-dark) 60%, #A8462F 100%);
+  border-color: var(--gold);
+  color: var(--gold-light);
+}
+.badge-feature.earned::after {           /* 金光掃過 */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 40%, rgba(255,236,190,0.35) 50%, transparent 60%);
+  transform: translateX(-100%);
+  animation: badge-shine 4.5s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes badge-shine { 0%, 60% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+.badge-seal {
+  flex-shrink: 0;
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  position: relative;
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1.15;
+  text-align: center;
+  letter-spacing: 0.1em;
+}
+.badge-feature.locked .badge-seal {
+  /* 外圈是進度 */
+  background:
+    radial-gradient(circle, var(--cream) 0 56%, transparent 57%),
+    conic-gradient(var(--red-dark) calc(var(--pct) * 1%), rgba(144,46,34,0.12) 0);
+  color: rgba(107,56,40,0.55);
+}
+.badge-feature.earned .badge-seal {
+  background: radial-gradient(circle, var(--red-mid) 0 54%, var(--gold) 55% 60%, var(--red-dark) 61% 70%, var(--gold) 71% 100%);
+  color: var(--cream);
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.25), 0 4px 14px rgba(0,0,0,0.35);
+  transform: rotate(-6deg);
+}
+
+.badge-info { min-width: 0; flex: 1; }
+.badge-name {
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 0.1em;
+}
+.badge-feature.locked .badge-name { color: var(--red-dark); }
+.badge-desc { font-size: 12px; margin-top: 2px; opacity: 0.85; }
+.badge-bar {
+  margin-top: 8px;
+  height: 6px;
+  border-radius: 99px;
+  background: rgba(144,46,34,0.12);
+  overflow: hidden;
+}
+.badge-bar i { display: block; height: 100%; background: var(--red-dark); border-radius: 99px; }
+
+.badge-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.badge-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px 4px 4px;
+  border-radius: 99px;
+  border: 1px solid var(--gold-deep);
+  background: var(--cream);
+  font: inherit;
+  font-size: 12px;
+  color: var(--ink-light);
+  cursor: pointer;
+}
+.badge-mini {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: 'Noto Serif TC', serif;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  background: rgba(144,46,34,0.1);
+  color: rgba(107,56,40,0.6);
+}
+.badge-chip.earned { background: var(--red-dark); color: var(--gold); border-color: var(--red-dark); }
+.badge-chip.earned .badge-mini { background: var(--gold); color: var(--red-dark); }
+
+/* 徽章彈窗 */
+.badge-popup {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(28, 10, 6, 0.7);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.badge-popup.open { opacity: 1; pointer-events: auto; }
+.badge-pop-card {
+  width: 100%;
+  max-width: 300px;
+  padding: 1.75rem 1.5rem 1.25rem;
+  text-align: center;
+  background: var(--cream);
+  border: 2px solid var(--gold-deep);
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+}
+.badge-pop-seal {
+  width: 112px;
+  height: 112px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 1.2;
+  letter-spacing: 0.12em;
+}
+.badge-pop-seal.earned {
+  background: radial-gradient(circle, var(--red-mid) 0 54%, var(--gold) 55% 60%, var(--red-dark) 61% 70%, var(--gold) 71% 100%);
+  color: var(--cream);
+  transform: rotate(-6deg);
+  box-shadow: 0 6px 20px rgba(144,46,34,0.4);
+}
+.badge-pop-seal.locked { background: rgba(144,46,34,0.08); color: rgba(107,56,40,0.45); border: 2px dashed var(--gold-deep); }
+.badge-pop-seal.stamp-in { animation: badge-stamp 0.6s cubic-bezier(.2, 1.4, .4, 1) both; }
+@keyframes badge-stamp {
+  from { transform: rotate(-24deg) scale(2); opacity: 0; }
+  to   { transform: rotate(-6deg) scale(1); opacity: 1; }
+}
+.badge-pop-title {
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--red-dark);
+  margin-bottom: 8px;
+}
+.badge-pop-text {
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--ink-light);
+  white-space: pre-line;
+  text-align: left;
+  margin-bottom: 16px;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+/* ==========================================
+   尋路雷達
+   ========================================== */
+.radar-card {
+  background: linear-gradient(160deg, #fff 0%, var(--gold-light) 100%);
+  border: 1.5px solid var(--gold-deep);
+  border-radius: 14px;
+  padding: 1rem 1.25rem 1.1rem;
+  margin-bottom: 14px;
+  text-align: center;
+}
+.radar-target-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  font-family: 'Noto Serif TC', serif;
+  font-size: 13px;
+  color: var(--ink-light);
+}
+.radar-target-row select {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1.5px solid var(--gold-deep);
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.radar-dial {
+  --north: 0deg;
+  --tone: var(--ink-light);
+  width: min(200px, 60vw);
+  aspect-ratio: 1;
+  margin: 0 auto 10px;
+  border-radius: 50%;
+  position: relative;
+  background:
+    radial-gradient(circle, transparent 0 32%, rgba(196,164,107,0.25) 32.5% 33%, transparent 33.5% 64%, rgba(196,164,107,0.25) 64.5% 65%, transparent 65.5%),
+    var(--cream);
+  border: 2px solid var(--gold-deep);
+  box-shadow: inset 0 2px 10px rgba(80,20,10,0.12);
+  transition: border-color 0.4s;
+}
+.radar-dial[data-temp="cold"] { --tone: #7A8A99; }
+.radar-dial[data-temp="mild"] { --tone: #B08A3E; }
+.radar-dial[data-temp="warm"] { --tone: var(--red-mid); }
+.radar-dial[data-temp="hot"]  { --tone: var(--red-dark); border-color: var(--red-dark); }
+
+.radar-north {
+  position: absolute;
+  inset: 0;
+  transform: rotate(var(--north));
+  transition: transform 0.3s ease-out;
+}
+.radar-north span {
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--red-dark);
+}
+.radar-arrow {
+  position: absolute;
+  inset: 18%;
+  transition: transform 0.35s ease-out;
+}
+.radar-arrow path { fill: var(--tone); transition: fill 0.4s; }
+.radar-dial[data-temp="none"] .radar-arrow { opacity: 0.25; }
+.radar-ping {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid var(--tone);
+  opacity: 0;
+}
+.radar-dial[data-temp="warm"] .radar-ping,
+.radar-dial[data-temp="hot"] .radar-ping { animation: radar-ping 1.6s ease-out infinite; }
+.radar-dial[data-temp="hot"] .radar-ping { animation-duration: 0.9s; }
+@keyframes radar-ping { from { transform: scale(0.4); opacity: 0.8; } to { transform: scale(1.15); opacity: 0; } }
+
+.radar-name {
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--ink);
+}
+.radar-dist {
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 700;
+  font-size: 30px;
+  color: var(--red-dark);
+  line-height: 1.3;
+}
+.radar-temp { font-size: 14px; color: var(--ink); min-height: 1.5em; }
+.radar-note { font-size: 11px; color: var(--ink-light); opacity: 0.8; min-height: 1.4em; }
+.radar-actions { display: grid; gap: 8px; margin-top: 12px; }
+.radar-actions .check-btn.on { background: var(--ink-light); }
+.radar-gmap { font-size: 13px; color: var(--red-dark); }
+.radar-tip { margin-top: 10px; font-size: 11px; color: var(--ink-light); }
+.coord-acc { font-size: 11px; color: var(--ink-light); margin: -6px 0 10px; min-height: 1em; }
+
+/* ==========================================
+   行囊
+   ========================================== */
+.bag-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.bag-stats div {
+  background: var(--gold-light);
+  border: 0.5px solid var(--gold-deep);
+  border-radius: 10px;
+  padding: 10px 6px;
+  text-align: center;
+}
+.bag-stats strong {
+  display: block;
+  font-family: 'Noto Serif TC', serif;
+  font-size: 22px;
+  color: var(--red-dark);
+}
+.bag-stats span { font-size: 11px; color: var(--ink-light); }
+
+.bag-list { display: grid; gap: 10px; }
+.bag-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  background: var(--cream);
+  border: 1px solid var(--gold-deep);
+  border-radius: 12px;
+}
+.bag-icon {
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  background: var(--gold-light);
+  overflow: hidden;
+}
+.bag-icon img { width: 100%; height: 100%; object-fit: cover; }
+.bag-name { font-family: 'Noto Serif TC', serif; font-weight: 700; color: var(--ink); }
+.bag-desc { font-size: 13px; color: var(--ink-light); line-height: 1.6; margin: 2px 0 4px; }
+.bag-from { font-size: 11px; color: var(--gold-deep); font-weight: 700; }
+
+/* ==========================================
+   Modal 追加
+   ========================================== */
+.modal { max-height: calc(100vh - 2rem); overflow-y: auto; }
+.modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.modal-act {
+  display: block;
+  padding: 9px 8px;
+  border: 1.5px solid var(--gold-deep);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  font-family: 'Noto Serif TC', serif;
+  font-size: 13px;
+  text-decoration: none;
+  text-align: center;
+  cursor: pointer;
+}
+.modal-act:hover { background: var(--gold-light); }
+.modal-act.primary { background: var(--red-dark); color: var(--gold); border-color: var(--red-dark); }
+.modal-act.primary:hover { background: var(--red-mid); }
+.modal-act.debug { grid-column: 1 / -1; border-style: dashed; color: var(--ink-light); }
+.modal-distance { grid-column: 1 / -1; font-size: 12px; color: var(--ink-light); }
+
+/* ==========================================
+   劇情播放器：互動節點
+   ========================================== */
+/* 對話框不設 overflow（否則上緣的說話者名牌會被切掉），改讓互動區自己捲動 */
+.story-interact { max-height: 38vh; overflow-y: auto; }
+.story-ai-tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 0 6px;
+  border: 1px solid var(--gold);
+  border-radius: 4px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  vertical-align: 2px;
+}
+
+.story-interact:empty { display: none; }
+.story-interact { margin-top: 10px; display: grid; gap: 8px; cursor: default; }
+
+.story-choice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  text-align: left;
+  background: #fff;
+  border: 1.5px solid var(--gold-deep);
+  border-radius: 8px;
+  font-family: 'Noto Serif TC', serif;
+  font-size: 15px;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+.story-choice:hover, .story-choice:focus-visible { background: var(--gold-light); border-color: var(--red-dark); outline: none; }
+.story-choice:active { transform: scale(0.99); }
+.story-choice-num {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  background: var(--red-dark);
+  color: var(--gold);
+}
+
+.story-ask { display: flex; gap: 8px; }
+.story-input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1.5px solid var(--gold-deep);
+  border-radius: 8px;
+  background: #fff;
+  font-family: 'Noto Serif TC', serif;
+  font-size: 16px; /* 16px 以上 iOS 才不會自動放大 */
+  color: var(--ink);
+}
+.story-input:focus { outline: none; border-color: var(--red-dark); box-shadow: 0 0 0 3px rgba(144,46,34,0.12); }
+.story-input.shake { animation: shake 0.4s; border-color: var(--red-mid); }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+.story-btn {
+  padding: 9px 14px;
+  border-radius: 8px;
+  border: 1.5px solid var(--gold-deep);
+  background: transparent;
+  font-family: 'Noto Serif TC', serif;
+  font-size: 14px;
+  color: var(--ink);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.story-btn.primary { background: var(--red-dark); color: var(--gold); border-color: var(--red-dark); }
+.story-btn.primary:hover { background: var(--red-mid); }
+.story-btn.ghost:hover { background: var(--gold-light); }
+.story-btn[hidden] { display: none; }
+
+.story-ask-tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.story-solved-note { font-size: 12px; color: #155724; }
+.story-hints p {
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--ink-light);
+  padding: 6px 10px;
+  margin-bottom: 4px;
+  background: rgba(227,194,151,0.25);
+  border-left: 3px solid var(--gold-deep);
+  border-radius: 0 6px 6px 0;
+}
+.story-correct {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #d4edda;
+  color: #155724;
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 700;
+}
+
+.story-onsite { display: grid; gap: 8px; }
+.story-onsite-status {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1.5px dashed var(--gold-deep);
+  font-size: 14px;
+  color: var(--ink);
+}
+.story-onsite-status.ok { border-style: solid; background: #d4edda; color: #155724; border-color: #c3e6cb; }
+
+.story-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: linear-gradient(120deg, var(--red-dark), #6B1F14);
+  color: var(--gold-light);
+}
+.story-item.new { animation: item-pop 0.5s cubic-bezier(.2, 1.4, .4, 1) both; }
+@keyframes item-pop { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.story-item-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  background: rgba(255,255,255,0.12);
+  overflow: hidden;
+}
+.story-item-icon img { width: 100%; height: 100%; object-fit: cover; }
+.story-item-label { font-size: 11px; letter-spacing: 0.1em; opacity: 0.8; }
+.story-item-name { font-family: 'Noto Serif TC', serif; font-weight: 700; font-size: 16px; color: var(--gold); }
+
+@media (max-width: 480px) {
+  .tab { padding: 9px 10px; }
+  .story-interact { max-height: 46vh; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .badge-feature.earned::after,
+  .radar-ping,
+  .story-item.new,
+  .badge-pop-seal.stamp-in,
+  .story-input.shake { animation: none !important; }
+}

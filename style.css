@@ -1,0 +1,465 @@
+/* =====================
+   CSS 變數 — 廟宇主題
+   ===================== */
+:root {
+  --red-dark:    #902E22;   /* 主色：深硃紅 */
+  --red-mid:     #B03A2A;   /* 中紅 hover用 */
+  --gold:        #E3C297;   /* 主色：金沙色 */
+  --gold-light:  #F2DDB5;   /* 淡金 */
+  --gold-deep:   #C4A46B;   /* 深金 邊框用 */
+  --cream:       #FDF6E9;   /* 米白底 */
+  --ink:         #3A1A10;   /* 墨色文字 */
+  --ink-light:   #6B3828;   /* 次要文字 */
+  --shadow:      rgba(80, 20, 10, 0.18);
+}
+
+/* =====================
+   Reset & Base
+   ===================== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Noto Sans TC', sans-serif;
+  background-color: var(--cream);
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(227,194,151,0.18) 0%, transparent 55%),
+    radial-gradient(circle at 80% 90%, rgba(144,46,34,0.08) 0%, transparent 55%);
+  color: var(--ink);
+  min-height: 100vh;
+}
+
+/* =====================
+   頂底裝飾紋路
+   ===================== */
+.top-border-pattern,
+.footer-pattern {
+  width: 100%;
+  height: 10px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--red-dark) 0px,
+    var(--red-dark) 18px,
+    var(--gold-deep) 18px,
+    var(--gold-deep) 22px,
+    var(--red-dark) 22px,
+    var(--red-dark) 40px
+  );
+}
+
+.footer-pattern {
+  margin-top: 40px;
+}
+
+/* =====================
+   Header
+   ===================== */
+.site-header {
+  background: linear-gradient(160deg, var(--red-dark) 0%, #6B1F14 100%);
+  text-align: center;
+  padding: 40px 20px 32px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 水印紋路 */
+.site-header::before {
+  content: "廟";
+  position: absolute;
+  font-family: 'Noto Serif TC', serif;
+  font-size: 260px;
+  font-weight: 900;
+  color: rgba(255,255,255,0.03);
+  top: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  user-select: none;
+}
+
+.header-ornament {
+  font-size: 18px;
+  color: var(--gold);
+  letter-spacing: 8px;
+  margin-bottom: 12px;
+  opacity: 0.8;
+}
+
+.site-header h1 {
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 900;
+  font-size: clamp(26px, 5vw, 42px);
+  color: var(--gold);
+  letter-spacing: 6px;
+  text-shadow: 0 2px 16px rgba(0,0,0,0.4);
+  margin-bottom: 16px;
+}
+
+.header-subtitle-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.line-deco {
+  display: block;
+  width: 60px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-deep), transparent);
+}
+
+.subtitle-text {
+  font-family: 'Noto Serif TC', serif;
+  font-size: 14px;
+  color: var(--gold-light);
+  letter-spacing: 4px;
+}
+
+.header-desc {
+  font-size: 13px;
+  color: rgba(227, 194, 151, 0.65);
+  letter-spacing: 1px;
+  line-height: 1.7;
+}
+
+/* =====================
+   Controls
+   ===================== */
+.controls_wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 0 20px;
+  margin-bottom: 20px;
+}
+
+#controls {
+  background: linear-gradient(135deg, #fff 0%, var(--gold-light) 100%);
+  border: 1.5px solid var(--gold-deep);
+  border-radius: 18px;
+  padding: 22px 32px;
+  box-shadow: 0 4px 24px var(--shadow), inset 0 1px 0 rgba(255,255,255,0.9);
+  width: 100%;
+  max-width: 760px;
+  position: relative;
+}
+
+/* 角落裝飾 */
+#controls::before,
+#controls::after {
+  content: "✦";
+  position: absolute;
+  font-size: 10px;
+  color: var(--gold-deep);
+  opacity: 0.6;
+}
+#controls::before { top: 10px; left: 14px; }
+#controls::after  { bottom: 10px; right: 14px; }
+
+.year-control-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.year-label {
+  font-family: 'Noto Serif TC', serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--red-dark);
+  white-space: nowrap;
+  letter-spacing: 2px;
+}
+
+#yearSlider {
+  flex: 1;
+  min-width: 120px;
+  accent-color: var(--red-dark);
+  height: 4px;
+  cursor: pointer;
+}
+
+.year-display {
+  font-family: 'Noto Serif TC', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--red-dark);
+  min-width: 52px;
+  text-align: center;
+  letter-spacing: 1px;
+}
+
+#yearInput {
+  width: 72px;
+  padding: 6px 8px;
+  font-size: 14px;
+  font-family: 'Noto Sans TC', sans-serif;
+  border: 1.5px solid var(--gold-deep);
+  border-radius: 8px;
+  text-align: center;
+  background: rgba(255,255,255,0.7);
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.2s;
+}
+#yearInput:focus {
+  border-color: var(--red-dark);
+}
+
+/* 數量 chips */
+.count-row {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.count-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border-radius: 30px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  border: 1.5px solid transparent;
+}
+
+.count-chip.guan {
+  background: rgba(144, 46, 34, 0.08);
+  border-color: rgba(144, 46, 34, 0.2);
+  color: var(--red-dark);
+}
+.count-chip.xian {
+  background: rgba(196, 164, 107, 0.15);
+  border-color: var(--gold-deep);
+  color: #7A5C20;
+}
+.count-chip.xiang {
+  background: rgba(58, 26, 16, 0.06);
+  border-color: rgba(58, 26, 16, 0.15);
+  color: var(--ink);
+}
+
+.count-icon {
+  font-size: 15px;
+}
+
+/* =====================
+   Button
+   ===================== */
+.button_wrapper {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.count-chip {
+  cursor: pointer;
+  font-family: 'Noto Sans TC', sans-serif;
+}
+
+.count-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(80, 20, 10, 0.15);
+}
+
+#viewAll {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 28px;
+  font-size: 14px;
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 600;
+  letter-spacing: 3px;
+  background: var(--red-dark);
+  color: var(--gold);
+  border: 1.5px solid var(--gold-deep);
+  border-radius: 30px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 3px 14px rgba(144, 46, 34, 0.30);
+}
+
+#viewAll:hover {
+  background: var(--red-mid);
+  color: var(--gold-light);
+  box-shadow: 0 5px 20px rgba(144, 46, 34, 0.42);
+}
+
+.btn-icon {
+  font-size: 16px;
+}
+
+.nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 28px;
+  font-size: 14px;
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 600;
+  letter-spacing: 3px;
+  background: var(--cream);
+  color: var(--red-dark);
+  border: 1.5px solid var(--gold-deep);
+  border-radius: 30px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 3px 14px rgba(144, 46, 34, 0.15);
+}
+
+.nav-btn:hover {
+  background: var(--gold-light);
+  color: var(--red-mid);
+  box-shadow: 0 5px 20px rgba(144, 46, 34, 0.25);
+}
+
+/* =====================
+   before description
+   ===================== */
+.mini-popup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Noto Sans TC', sans-serif;
+  text-align: center;
+}
+
+.mini-popup strong {
+  color: var(--red-dark);
+  font-family: 'Noto Serif TC', serif;
+}
+
+.mini-popup button {
+  padding: 5px 12px;
+  border: 1px solid var(--gold-deep);
+  border-radius: 999px;
+  background: white;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.mini-popup button:hover {
+  background: var(--gold-light);
+}
+
+/* =====================
+   description
+   ===================== */
+.place-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.place-modal.hidden {
+  display: none;
+}
+
+.modal-card {
+  position: relative;
+  width: 340px;
+  max-height: 82vh;
+  overflow-y: auto;
+  background: var(--cream);
+  border: 2px solid var(--gold-deep);
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.28);
+  padding: 22px;
+}
+
+.close-modal {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  border: none;
+  background: transparent;
+  font-size: 26px;
+  cursor: pointer;
+  color: var(--ink);
+}
+
+.modal-card h3 {
+  font-family: 'Noto Serif TC', serif;
+  color: var(--red-dark);
+  text-align: center;
+  margin-bottom: 12px;
+  padding: 0 28px;
+}
+
+.photo-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.photo-tabs button {
+  padding: 5px 14px;
+  border: 1px solid var(--gold-deep);
+  border-radius: 999px;
+  background: white;
+  cursor: pointer;
+}
+
+.photo-tabs button:hover {
+  background: var(--gold-light);
+}
+
+.photo-title {
+  text-align: center;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.popup-photo {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--gold-deep);
+}
+
+.popup-info {
+  margin-top: 14px;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.popup-info p {
+  margin-bottom: 8px;
+}
+
+/* =====================
+   Map
+   ===================== */
+.map-frame {
+  padding: 0 16px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+#map {
+  height: 580px;
+  width: 100%;
+  border-radius: 14px;
+  border: 3px solid var(--gold-deep);
+  box-shadow: 0 6px 32px var(--shadow);
+  overflow: hidden;
+}

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>神社模擬器</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700;900&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+  <!-- 頂部裝飾紋路 -->
+  <div class="top-border-pattern"></div>
+
+  <header class="site-header">
+    <div class="header-ornament">✦</div>
+    <h1>臺灣神社模擬器</h1>
+    <div class="header-subtitle-line">
+      <span class="line-deco"></span>
+      <span class="subtitle-text">穿越時光・尋訪神祇</span>
+      <span class="line-deco"></span>
+    </div>
+    <p class="header-desc">以下36個神社，你曾經去過幾個？</p>
+  </header>
+
+  <div class="controls_wrapper">
+    <div id="controls">
+      <div class="controls-inner">        
+        <div class="count-row">
+
+          <button class="count-chip guan" id="showGuan">
+            <span class="count-icon">🏯</span>
+            <span id="guanCount">官社：0</span>
+          </button>
+
+          <button class="count-chip xian" id="showXian">
+            <span class="count-icon">⛩</span>
+            <span id="xianCount">縣社：0</span>
+          </button>
+
+          <button class="count-chip xiang" id="showXiang">
+            <span class="count-icon">🏮</span>
+            <span id="xiangCount">鄉社：0</span>
+          </button>  
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="button_wrapper">
+    <button id="viewAll">
+      <span class="btn-icon">⊕</span> 顯示全部神社
+    </button>
+    <a href="card.html" class="nav-btn">
+      <span class="btn-icon">🎴</span> 集點卡
+    </a>
+  </div>
+
+  <div class="map-frame">
+    <div id="map"></div>
+  </div>
+
+  <div id="placeModal" class="place-modal hidden">
+    <div class="modal-card">
+      <button id="closeModal" class="close-modal">×</button>
+
+      <h3 id="modalTitle"></h3>
+
+      <div class="photo-tabs">
+        <button id="pastBtn">過去</button>
+        <button id="nowBtn">現在</button>
+      </div>
+
+      <div id="modalPhotoTitle" class="photo-title"></div>
+
+      <img id="modalPhoto" class="popup-photo" src="" alt="">
+
+      <div class="popup-info">
+        <p><strong>地址：</strong><span id="modalAddress"></span></p>
+        <p><strong>開始年份：</strong><span id="modalStartYear"></span></p>
+        <p><strong>結束年份：</strong><span id="modalEndYear"></span></p>
+        <p><strong>說明：</strong><span id="modalDescription"></span></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 底部裝飾 -->
+  <div class="footer-pattern"></div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

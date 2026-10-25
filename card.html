@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>台灣廟宇集章圖鑑</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="card.css" />
+  <link rel="stylesheet" href="game.css" />
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="back-btn">← 地圖</a>
+      <div class="header-icon" aria-hidden="true">⛩️</div>
+      <div>
+        <h1 class="site-title">台灣廟宇集章圖鑑</h1>
+        <p class="site-sub">走訪神社，解開謎題，集齊印章</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- 登入畫面 -->
+  <div id="login-screen" class="login-screen">
+    <div class="login-card">
+      <div class="login-icon">⛩️</div>
+      <h2 class="login-title">台灣廟宇集章圖鑑</h2>
+      <p class="login-desc">登入後，你的集章記錄將永久保存<br>並且只有你看得到</p>
+      <button id="google-login-btn" class="google-btn">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" width="20" />
+        使用 Google 登入
+      </button>
+    </div>
+  </div>
+
+  <!-- 主應用（登入後才顯示） -->
+  <main class="app" id="main-app" style="display:none">
+
+    <!-- 使用者資訊列 -->
+    <div class="user-bar">
+      <img id="user-avatar" class="user-avatar" src="" alt="" />
+      <span id="user-name" class="user-name"></span>
+      <button id="logout-btn" class="logout-btn">登出</button>
+    </div>
+
+    <!-- 進度條 -->
+    <section class="progress-section">
+      <p class="progress-label">已集章 <strong id="prog-count">0</strong> / <span id="prog-total">0</span></p>
+      <div class="progress-bar-wrap" role="progressbar" aria-valuemin="0" aria-valuemax="0" aria-valuenow="0" id="prog-bar-aria">
+        <div class="progress-bar" id="prog-bar"></div>
+      </div>
+    </section>
+
+    <!-- 分頁 -->
+    <nav class="tabs">
+      <button class="tab active" data-tab="gallery" onclick="switchTab('gallery')">圖鑑</button>
+      <button class="tab" data-tab="gps" onclick="switchTab('gps')">GPS 尋路</button>
+      <button class="tab" data-tab="collected" onclick="switchTab('collected')">已集章</button>
+      <button class="tab" data-tab="bag" onclick="switchTab('bag')">行囊</button>
+    </nav>
+
+    <!-- 圖鑑頁 -->
+    <section id="tab-gallery" class="section active">
+
+      <!-- 徽章展示 -->
+      <div class="badge-shelf" id="badge-shelf" aria-label="徽章"></div>
+
+      <!-- 分類篩選列 -->
+      <div class="filter-row">
+        <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">全部</button>
+        <button class="filter-btn" data-filter="官社" onclick="setFilter('官社')">🏯 官社</button>
+        <button class="filter-btn" data-filter="縣社" onclick="setFilter('縣社')">⛩ 縣社</button>
+        <button class="filter-btn" data-filter="鄉社" onclick="setFilter('鄉社')">🏮 鄉社</button>
+      </div>
+
+      <div class="grid" id="gallery-grid"></div>
+    </section>
+
+    <!-- GPS 打卡頁 -->
+    <section id="tab-gps" class="section">
+      <!-- 尋路雷達 -->
+      <div class="radar-card">
+        <label class="radar-target-row">
+          <span>目標</span>
+          <select id="radar-target" onchange="setRadarTarget(this.value)">
+            <option value="auto">最近的未集章神社</option>
+          </select>
+        </label>
+        <div class="radar-dial" id="radar-dial" data-temp="none">
+          <div class="radar-north" aria-hidden="true"><span>N</span></div>
+          <div class="radar-ping" aria-hidden="true"></div>
+          <svg class="radar-arrow" id="radar-arrow" viewBox="0 0 100 100" aria-hidden="true">
+            <path d="M50 8 L70 60 L50 50 L30 60 Z" />
+          </svg>
+        </div>
+        <div class="radar-name" id="radar-name">—</div>
+        <div class="radar-dist" id="radar-dist">—</div>
+        <div class="radar-temp" id="radar-temp" aria-live="polite">按「開始追蹤」，跟著箭頭走</div>
+        <div class="radar-note" id="radar-compass-note"></div>
+        <div class="radar-actions">
+          <button class="check-btn" id="radar-toggle" onclick="toggleRadar()">🧭 開始追蹤</button>
+          <a class="radar-gmap" id="radar-gmap" target="_blank" rel="noopener" style="visibility:hidden">Google 地圖步行導航 ↗</a>
+        </div>
+        <p class="radar-tip">追蹤時走進任何神社 50 公尺內會自動打卡。</p>
+      </div>
+
+      <div class="gps-panel">
+        <div class="gps-status">
+          <div class="status-dot" id="status-dot"></div>
+          <span class="status-text" id="status-text">點擊下方按鈕取得位置</span>
+        </div>
+        <div class="coord-row">
+          <div class="coord-box">
+            <div class="coord-label">緯度</div>
+            <div class="coord-val" id="lat-val">—</div>
+          </div>
+          <div class="coord-box">
+            <div class="coord-label">經度</div>
+            <div class="coord-val" id="lng-val">—</div>
+          </div>
+        </div>
+        <div class="coord-acc" id="acc-val"></div>
+        <button class="check-btn" id="check-btn" onclick="checkLocation()">
+          📍 只定位一次並打卡
+        </button>
+        <div id="nearest-box" class="nearest" style="display:none">
+          <div class="nearest-label">最近景點</div>
+          <div class="nearest-name" id="nearest-name">—</div>
+          <div class="nearest-dist" id="nearest-dist">—</div>
+        </div>
+        <div id="result-banner" class="result-banner" style="display:none"></div>
+      </div>
+    </section>
+
+    <!-- 已集章頁 -->
+    <section id="tab-collected" class="section">
+      <div class="grid" id="collected-grid"></div>
+      <div id="collected-empty" class="empty-hint" style="display:none">
+        <span class="empty-icon">🗺️</span>
+        <p>尚未集到任何章，趕快出發吧！</p>
+      </div>
+    </section>
+
+    <!-- 行囊頁 -->
+    <section id="tab-bag" class="section">
+      <div class="bag-stats" id="bag-stats"></div>
+      <div class="bag-list" id="bag-list"></div>
+      <div id="bag-empty" class="empty-hint" style="display:none">
+        <span class="empty-icon">🎒</span>
+        <p>行囊還是空的。<br>在神社的故事裡解開謎題，就會得到道具。</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modal" onclick="closeModalOverlay(event)">
+    <div class="modal">
+      <div class="modal-img" id="modal-img"></div>
+      <div class="modal-photo-label" id="modal-photo-label"></div>
+
+      <!-- 過去/現在切換（已集章才顯示） -->
+      <div class="modal-photo-tabs" id="modal-photo-tabs" style="display:none">
+        <button class="photo-tab-btn active" data-mode="past" onclick="showModalPhoto('past')">過去</button>
+        <button class="photo-tab-btn" data-mode="now" onclick="showModalPhoto('now')">現在</button>
+      </div>
+
+      <div class="modal-title" id="modal-title"></div>
+      <div class="modal-new-name" id="modal-new-name"></div>
+      <div class="modal-sub" id="modal-sub"></div>
+      <div class="modal-period" id="modal-period"></div>
+      <div class="modal-status" id="modal-status"></div>
+      <div class="modal-desc" id="modal-desc"></div>
+      <!-- 劇情章節（已解鎖的可重看） -->
+      <div class="modal-stories" id="modal-stories" style="display:none"></div>
+      <!-- 帶我去／地圖／除錯 -->
+      <div class="modal-actions" id="modal-actions"></div>
+      <button class="modal-close" onclick="closeModal()">關閉</button>
+    </div>
+  </div>
+
+  <!-- 劇情播放器 -->
+  <div class="story-overlay" id="story" aria-hidden="true" role="dialog" aria-label="劇情">
+    <div class="story-stage">
+      <div class="story-bg" id="story-bg"></div>
+      <div class="story-head">
+        <span class="story-chapter" id="story-title"></span>
+        <button class="story-skip" onclick="closeStory()">略過 ✕</button>
+      </div>
+      <div class="story-seal" id="story-seal" aria-hidden="true">解鎖</div>
+      <div class="story-box" id="story-box" tabindex="0" onclick="advanceStory()">
+        <div class="story-speaker" id="story-speaker"></div>
+        <p class="story-text" id="story-text" aria-live="polite"></p>
+        <!-- 選項、答題框、現場關卡、道具卡會出現在這裡 -->
+        <div class="story-interact" id="story-interact"></div>
+        <div class="story-controls">
+          <button class="story-prev" id="story-prev" onclick="event.stopPropagation(); prevStory()">上一句</button>
+          <span id="story-page"></span>
+          <span class="story-next-hint" id="story-next-hint">點擊繼續 ▼</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 徽章彈窗 -->
+  <div class="badge-popup" id="badge-popup" role="dialog" aria-modal="true" aria-label="徽章" onclick="if(event.target===this)closeBadgePopup()">
+    <div class="badge-pop-card">
+      <div class="badge-pop-seal"></div>
+      <div class="badge-pop-title"></div>
+      <p class="badge-pop-text"></p>
+      <button class="modal-close badge-pop-close" onclick="closeBadgePopup()">收下</button>
+    </div>
+  </div>
+
+  <script src="csv.js"></script>
+  <script src="data.js"></script>
+  <script src="story.js"></script>
+  <script src="ai.js"></script>
+  <script src="badges.js"></script>
+  <script src="app.js"></script>
+  <script type="module" src="firebase.js"></script>
+</body>
+</html>
