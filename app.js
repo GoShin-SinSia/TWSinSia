@@ -5,7 +5,7 @@
  *
  * 網址參數（測試用）：
  *   ?date=2026-10-25   假裝是那一天
- *   ?debug=1           在神社詳情出現「模擬在此打卡」，現場關卡可略過
+ *   ?debug=1           在神社詳情出現「模擬在此打卡」，現場關卡可略過，缺出處的照片會標出來
  */
 
 if (!window.collected) window.collected = new Set();
@@ -13,6 +13,7 @@ if (!window.unlockedStories) window.unlockedStories = new Map(); // 'spotId:key'
 if (!window.items) window.items = new Map();                     // 道具名 → { desc, spotId, date }
 if (!window.solved) window.solved = new Set();                   // 解開的謎題／現場關卡
 if (!window.aiStories) window.aiStories = new Map();             // 'spotId:ai-日期' → variant
+if (!window.quests) window.quests = new Map();                   // 'spotId:key' → 解謎進度
 
 const DEBUG = new URLSearchParams(location.search).has('debug');
 const ONSITE_DEFAULT_RADIUS = 60;
@@ -61,6 +62,24 @@ function findNearest(lat, lng, list = SPOTS) {
   return { spot: best, dist: bestDist };
 }
 
+// 最近一次定位結果（雷達、現場關卡、單次定位共用）
+let lastFix = null;
+function rememberFix(c) {
+  lastFix = { lat: c.latitude, lng: c.longitude, acc: c.accuracy, t: Date.now() };
+  return lastFix;
+}
+// 有 10 秒內的定位就直接用；否則重新定位。
+// （有些瀏覽器在 watchPosition 進行中，getCurrentPosition 會一直等不到）
+function getFix(onOk, onErr, maxAge = 10000) {
+  if (lastFix && Date.now() - lastFix.t < maxAge) { onOk(lastFix); return; }
+  if (!navigator.geolocation) { onErr({ message: '此瀏覽器不支援 GPS 定位' }); return; }
+  navigator.geolocation.getCurrentPosition(
+    p => onOk(rememberFix(p.coords)),
+    onErr,
+    { enableHighAccuracy: true, timeout: 12000, maximumAge: 5000 }
+  );
+}
+
 function escapeHTML(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
@@ -86,11 +105,22 @@ function storyMark(spotId) {
   return `<div class="stamp-story-mark" title="${puzzle ? '有解謎' : '有劇情'}">${puzzle ? '🧩' : '📜'}</div>`;
 }
 
+let _saveTimer = null;
 async function save() {
+  clearTimeout(_saveTimer); _saveTimer = null;
   if (window.saveProgress) {
     try { await window.saveProgress(); } catch (e) { console.error('儲存失敗', e); }
   }
 }
+// 解謎進度每走一步都會變，合併成幾秒存一次
+function scheduleSave() {
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(save, 2500);
+}
+// 手機切到背景前把還沒存的進度存起來
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' && _saveTimer) save();
+});
 
 /* ==========================================
    分類篩選
@@ -248,6 +278,7 @@ function switchTab(tabName) {
   document.getElementById('tab-' + tabName).classList.add('active');
   if (tabName === 'collected') renderCollected();
   if (tabName === 'bag') renderBag();
+  if (tabName === 'quest') renderQuests();
   if (tabName === 'gps') fillRadarTargets();
 }
 
@@ -266,17 +297,16 @@ function checkLocation() {
   dot.className = 'status-dot active';
   txt.textContent = '定位中…';
 
-  navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      const { latitude: lat, longitude: lng } = pos.coords;
-      showCoords(lat, lng, pos.coords.accuracy);
+  getFix(
+    (f) => {
+      showCoords(f.lat, f.lng, f.acc);
       dot.className = 'status-dot active';
       txt.textContent = '定位成功';
       btn.disabled = false;
-      processCheckIn(lat, lng);
+      processCheckIn(f.lat, f.lng);
     },
     (err) => { showGpsError('無法取得位置：' + err.message); btn.disabled = false; },
-    { enableHighAccuracy: true, timeout: 12000 }
+    5000
   );
 }
 
@@ -310,6 +340,7 @@ function fillRadarTargets() {
   if (!sel || !SPOTS.length) return;
   const keep = sel.value || String(radar.target);
   sel.innerHTML = '<option value="auto">最近的未集章神社</option>' +
+    (radar.customTarget ? `<option value="custom">🧩 ${escapeHTML(radar.customTarget.name)}</option>` : '') +
     ['官社', '縣社', '鄉社', '未分類'].map(cat => {
       const list = SPOTS.filter(s => s.category === cat);
       if (!list.length) return '';
@@ -320,10 +351,11 @@ function fillRadarTargets() {
 }
 
 function setRadarTarget(value) {
-  radar.target = value;
+  if (value && typeof value === 'object') { radar.customTarget = value; value = 'custom'; }
+  radar.target = value === 'custom' ? radar.customTarget : value;
   radar.lastDist = null;
   const sel = document.getElementById('radar-target');
-  if (sel && typeof value !== 'object') { fillRadarTargets(); sel.value = String(value); }
+  if (sel) { fillRadarTargets(); sel.value = String(value); }
   drawRadar();
 }
 
@@ -363,6 +395,7 @@ async function toggleRadar() {
   radar.watchId = navigator.geolocation.watchPosition(
     (pos) => {
       const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+      rememberFix(pos.coords);
       radar.pos = { lat, lng, accuracy };
       showCoords(lat, lng, accuracy);
       document.getElementById('status-text').textContent = '追蹤中';
@@ -509,8 +542,9 @@ async function processCheckIn(lat, lng, { forceSpot = null } = {}) {
   const isNew = !window.collected.has(spot.id);
   if (isNew) window.collected.add(spot.id);
 
-  // 1. 先找作者寫好的劇情
-  let variant = pickStoryVariant(spot.id, date, window.unlockedStories, gameCtx());
+  // 1. 先找作者寫好的劇情（解謎任務不在打卡時自動播，改到解謎頁開始）
+  let variant = pickStoryVariant(spot.id, date, window.unlockedStories, gameCtx(), { excludeQuests: true });
+  const questsHere = availableQuestsAt(spot, date);
 
   // 2. 這間神社完全沒有登記劇情 → 問 AI（同一天同一間只問一次）
   if (!variant && !hasWrittenStories(spot.id)) {
@@ -541,9 +575,10 @@ async function processCheckIn(lat, lng, { forceSpot = null } = {}) {
   }
   if (storyIsNew) {
     banner.textContent += `\n📜 解鎖新劇情「${variant.title}」`;
-  } else if (!variant && getStoryVariants(spot.id).length) {
+  } else if (!variant && !questsHere.length && getStoryVariants(spot.id).length) {
     banner.textContent += '\n今天這裡很安靜。換個日子再來看看吧。';
   }
+  showQuestHint(questsHere);
   if (freshBadges.length) banner.textContent += `\n🏅 獲得徽章「${freshBadges.map(b => b.name).join('」「')}」`;
 
   if (variant) {
@@ -658,6 +693,10 @@ function renderModalStories(spot) {
     const small = document.createElement('small');
     small.textContent = `${d.getMonth() + 1}/${d.getDate()}`;
     btn.appendChild(small);
+    if (isQuestVariant(v) && !v.ai) {
+      const q = window.quests.get(storyKey(spot.id, v));
+      small.textContent = q && q.status === 'active' ? '進行中' : q && q.doneDate ? '✓ 完成' : small.textContent;
+    }
     btn.addEventListener('click', () => openStory(spot, v, { date: d }));
     box.appendChild(btn);
   }
@@ -688,6 +727,7 @@ function showModalPhoto(mode) {
          onerror="this.parentElement.innerHTML='<span style=\\'font-size:42px\\'>${spot.emoji}</span>'" />`;
 
   document.getElementById('modal-photo-label').textContent = mode === 'past' ? `過去・${spot.name}` : `現在・${label}`;
+  renderCredit(document.getElementById('modal-photo-credit'), src);
   document.querySelectorAll('.photo-tab-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.mode === mode);
   });
@@ -762,14 +802,19 @@ function speakerOf(line) {
   return s || storyState.variant.speaker || '';
 }
 
-function puzzleId(line) {
-  const { spot, variant } = storyState;
-  return `${spot.id}:${variant.key}:${line.node || 'r' + line.row}`;
+function puzzleIdFor(spotId, variant, line) {
+  return `${spotId}:${variant.key}:${line.node || 'r' + line.row}`;
 }
+function puzzleId(line) {
+  return puzzleIdFor(storyState.spot.id, storyState.variant, line);
+}
+const todayKey = () => toDateKey(new Date());
 
 function openStory(spot, variant, opts = {}) {
   if (!variant || !variant.lines.length) return false;
   stopOnsiteWatch();
+  const qKey = storyKey(spot.id, variant);
+  const isQuest = isQuestVariant(variant) && !variant.ai;
   storyState = {
     spot, variant,
     date: opts.date || getStoryDate(),
@@ -777,7 +822,26 @@ function openStory(spot, variant, opts = {}) {
     typing: false, timer: null, full: '',
     passed: false, // 目前這個互動節點是否已通過
     wrong: 0, hintShown: 0,
+    quest: isQuest ? qKey : null,
   };
+
+  // 解謎任務：讀取或建立存檔
+  let start = 0, resumed = false;
+  if (isQuest) {
+    const q = window.quests.get(qKey);
+    if (q && q.status === 'active' && !opts.restart && q.index > 0 && q.index < variant.lines.length) {
+      start = q.index;
+      storyState.history = Array.isArray(q.history) ? q.history.filter(i => i < variant.lines.length) : [];
+      resumed = true;
+    } else {
+      window.quests.set(qKey, {
+        ...(q || {}), status: 'active', index: 0, history: [],
+        started: (q && q.started) || todayKey(), updated: todayKey(),
+      });
+    }
+    if (!window.unlockedStories.has(qKey)) window.unlockedStories.set(qKey, todayKey());
+    scheduleSave();
+  }
 
   const title = document.getElementById('story-title');
   title.textContent = `${spot.name}｜${variant.title}`;
@@ -798,8 +862,31 @@ function openStory(spot, variant, opts = {}) {
   overlay.setAttribute('aria-hidden', 'false');
   document.getElementById('story-box').focus();
 
-  goTo(0, false);
+  goTo(start, false);
+  if (resumed) showStoryToast('📍 從上次的進度繼續');
   return true;
+}
+
+function showStoryToast(msg) {
+  const el = document.getElementById('story-toast');
+  el.textContent = msg;
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+}
+
+// 把目前位置寫進解謎存檔（記憶體），稍後一起存到 Firestore
+function recordQuestProgress() {
+  if (!storyState || !storyState.quest) return;
+  const q = window.quests.get(storyState.quest) || {};
+  q.status = 'active';
+  q.index = storyState.index;
+  q.history = storyState.history.slice(-100);
+  q.updated = todayKey();
+  window.quests.set(storyState.quest, q);
+  scheduleSave();
+}
+function saveQuestNow() {
+  recordQuestProgress();
+  save();
 }
 
 // 找節點；找不到回傳 null
@@ -821,7 +908,8 @@ function goTo(idx, pushHistory = true) {
     if (t == null) console.warn(`[劇情] 找不到節點「${lines[idx].param}」（第 ${lines[idx].row} 列）`);
     idx = t == null ? idx + 1 : t;
   }
-  if (idx >= lines.length || (lines[idx].type === 'end' && !lines[idx].text)) { closeStory(); return; }
+  if (idx >= lines.length) { finishStory(); return; }
+  if (lines[idx].type === 'end' && !lines[idx].text) { endAt(lines[idx]); return; }
 
   if (pushHistory && storyState.index >= 0) storyState.history.push(storyState.index);
   storyState.index = idx;
@@ -829,6 +917,40 @@ function goTo(idx, pushHistory = true) {
   storyState.wrong = 0;
   storyState.hintShown = 0;
   renderStoryLine();
+  recordQuestProgress();
+}
+
+// 「結束」節點：參數寫「中斷」= 還沒真正開始（例如選了下次再說），不算完成
+function endAt(line) {
+  if (/中斷|abort/i.test(line.param || '')) abortStory();
+  else finishStory();
+}
+
+function abortStory() {
+  if (storyState && storyState.quest) {
+    const q = window.quests.get(storyState.quest);
+    // Firestore 合併寫入不會刪掉欄位，所以用狀態標記而不是 delete
+    if (q && q.doneDate) Object.assign(q, { status: 'done', index: 0, history: [] });
+    else window.quests.set(storyState.quest, { status: 'new', index: 0, history: [] });
+    save();
+  }
+  closeStory({ keepProgress: true });
+}
+
+function finishStory() {
+  if (!storyState) return;
+  if (!storyState.quest) { closeStory(); return; }
+  const q = window.quests.get(storyState.quest) || {};
+  Object.assign(q, { status: 'done', index: 0, history: [], doneDate: todayKey(), updated: todayKey() });
+  window.quests.set(storyState.quest, q);
+  save();
+  // 蓋一個「完成」印再關
+  const seal = document.getElementById('story-seal');
+  seal.textContent = '完成';
+  seal.classList.remove('show'); void seal.offsetWidth; seal.classList.add('show');
+  const st = storyState;
+  st.finishing = true;
+  setTimeout(() => { if (storyState === st) closeStory({ keepProgress: true }); }, 1600);
 }
 
 function isLastStep() {
@@ -862,7 +984,24 @@ function renderStoryLine() {
 
   document.getElementById('story-page').textContent = `${index + 1} / ${variant.lines.length}`;
   document.getElementById('story-prev').disabled = storyState.history.length === 0;
-  document.getElementById('story-bg').style.backgroundImage = `url("${storyBgAt(index)}")`;
+  const bg = storyBgAt(index);
+  document.getElementById('story-bg').style.backgroundImage = `url("${bg}")`;
+  renderCredit(document.getElementById('story-credit'), bg);
+
+  // 史實標記：這句有填出處才顯示
+  const fact = document.getElementById('story-fact');
+  const hasSource = !!(line.source && line.source.length);
+  fact.hidden = !hasSource;
+  fact.setAttribute('aria-expanded', 'false');
+  const srcPanel = document.getElementById('story-source');
+  srcPanel.hidden = true;
+  if (hasSource) {
+    srcPanel.innerHTML = '<div class="story-source-title">📖 史料出處</div>';
+    const ul = document.createElement('ul');
+    line.source.forEach(src => ul.appendChild(sourceItem(src)));
+    srcPanel.appendChild(ul);
+    srcPanel.insertAdjacentHTML('beforeend', '<p class="story-source-note">未標記「史實」的台詞與角色為虛構敘事。</p>');
+  }
 
   const box = document.getElementById('story-box');
   box.dataset.type = line.type;
@@ -949,7 +1088,8 @@ function renderAsk(line, box) {
 
   const pass = (revealed) => {
     storyState.passed = true;
-    if (!revealed && !window.solved.has(pid)) { window.solved.add(pid); save(); }
+    if (!revealed && !window.solved.has(pid)) window.solved.add(pid);
+    saveQuestNow();
     form.innerHTML = `<div class="story-correct">${revealed ? '答案是' : '✓ 答對了！'}「${escapeHTML(answers[0] || '')}」</div>`;
     box.querySelector('.story-ask-tools').remove();
     updateNextHint();
@@ -985,11 +1125,18 @@ function stopOnsiteWatch() {
   onsiteWatchId = null;
 }
 
-function onsiteTarget(line) {
-  const nums = String(line.param || '').split(/[\s,，]+/).map(Number).filter(n => !isNaN(n));
-  const spot = storyState.spot;
-  if (nums.length >= 2) return { lat: nums[0], lng: nums[1], radius: nums[2] || ONSITE_DEFAULT_RADIUS };
-  return { lat: spot.lat, lng: spot.lng, radius: Math.max(spot.radius, ONSITE_DEFAULT_RADIUS) };
+/**
+ * 現場關卡的參數：
+ *   （空白）            神社座標
+ *   緯度 經度 [半徑]     指定地點
+ *   ……加上「隱藏」       不顯示距離與方向、解謎頁也不能導航（要玩家自己推理地點）
+ */
+function onsiteTarget(line, spot = storyState.spot) {
+  const param = String(line.param || '');
+  const hidden = /隱藏|hide/i.test(param);
+  const nums = param.replace(/隱藏|hide/gi, ' ').split(/[\s,，]+/).filter(Boolean).map(Number).filter(n => !isNaN(n));
+  if (nums.length >= 2) return { lat: nums[0], lng: nums[1], radius: nums[2] || ONSITE_DEFAULT_RADIUS, hidden, custom: true };
+  return { lat: spot.lat, lng: spot.lng, radius: Math.max(spot.radius, ONSITE_DEFAULT_RADIUS), hidden, custom: false };
 }
 
 function renderOnsite(line, box) {
@@ -999,7 +1146,7 @@ function renderOnsite(line, box) {
 
   box.innerHTML = `
     <div class="story-onsite">
-      <div class="story-onsite-status" aria-live="polite">📡 正在確認你的位置…</div>
+      <div class="story-onsite-status" aria-live="polite">${t.hidden ? '找到地方之後，按「我到了」。' : '📡 正在確認你的位置…'}</div>
       <div class="story-ask-tools">
         <button type="button" class="story-btn primary" data-act="here">📍 我到了</button>
         ${already ? '<button type="button" class="story-btn ghost" data-act="skip">已完成過，繼續</button>' : ''}
@@ -1017,15 +1164,19 @@ function renderOnsite(line, box) {
     status.classList.add('ok');
     box.querySelector('.story-ask-tools').remove();
     updateNextHint();
+    saveQuestNow();
     setTimeout(() => { if (storyState && curLine() === line) goTo(storyState.index + 1); }, 900);
   };
 
+  let manual = false;
   const update = (lat, lng, acc) => {
     const d = haversine(lat, lng, t.lat, t.lng);
     // GPS 誤差大時放寬一點，避免站在原地進不去
     const slack = Math.min(acc || 0, 30);
     if (d <= t.radius + slack) { pass(); return true; }
-    status.textContent = `距離目標約 ${fmtDist(d)}，往${dirName(bearing(lat, lng, t.lat, t.lng))}方走`;
+    status.textContent = t.hidden
+      ? (manual ? '好像還不是這裡。再想想線索指的是哪裡？' : '找到地方之後，按「我到了」。')
+      : `距離目標約 ${fmtDist(d)}，往${dirName(bearing(lat, lng, t.lat, t.lng))}方走`;
     return false;
   };
 
@@ -1033,18 +1184,19 @@ function renderOnsite(line, box) {
     status.textContent = '這個瀏覽器無法定位';
   } else {
     onsiteWatchId = navigator.geolocation.watchPosition(
-      p => update(p.coords.latitude, p.coords.longitude, p.coords.accuracy),
+      p => { rememberFix(p.coords); update(p.coords.latitude, p.coords.longitude, p.coords.accuracy); },
       err => { status.textContent = '無法取得位置：' + err.message; },
       { enableHighAccuracy: true, maximumAge: 3000, timeout: 20000 }
     );
   }
 
   box.querySelector('[data-act="here"]').addEventListener('click', () => {
+    manual = true;
     status.textContent = '📡 定位中…';
-    navigator.geolocation?.getCurrentPosition(
-      p => update(p.coords.latitude, p.coords.longitude, p.coords.accuracy),
+    getFix(
+      f => update(f.lat, f.lng, f.acc),
       err => { status.textContent = '無法取得位置：' + err.message; },
-      { enableHighAccuracy: true, timeout: 12000 }
+      8000
     );
   });
   box.querySelector('[data-act="skip"]')?.addEventListener('click', () => pass(false));
@@ -1110,7 +1262,8 @@ function advanceStory() {
   }
   const line = curLine();
   if (['choice', 'ask', 'onsite'].includes(line.type) && !storyState.passed) return;
-  if (line.type === 'end') { closeStory(); return; }
+  if (storyState.finishing) return;
+  if (line.type === 'end') { endAt(line); return; }
   goTo(storyState.index + 1);
 }
 
@@ -1119,18 +1272,23 @@ function prevStory() {
   goTo(storyState.history.pop(), false);
 }
 
-function closeStory() {
+function closeStory({ keepProgress = false } = {}) {
   if (!storyState) return;
   const spot = storyState.spot;
+  if (storyState.quest && !keepProgress && !storyState.finishing) { recordQuestProgress(); save(); }
   clearInterval(storyState.timer);
   stopOnsiteWatch();
   storyState = null;
   const overlay = document.getElementById('story');
   overlay.classList.remove('open');
   overlay.setAttribute('aria-hidden', 'true');
-  document.getElementById('story-seal').classList.remove('show');
+  const seal = document.getElementById('story-seal');
+  seal.classList.remove('show');
+  seal.textContent = '解鎖';
+  document.getElementById('story-source').hidden = true;
   if (currentModalSpot && currentModalSpot.id === spot.id) renderModalStories(spot);
   if (document.getElementById('tab-bag').classList.contains('active')) renderBag();
+  if (document.getElementById('tab-quest').classList.contains('active')) renderQuests();
 
   if (pendingBadges.length) {
     const list = pendingBadges; pendingBadges = [];
@@ -1146,6 +1304,168 @@ function closeStory() {
 document.getElementById('story-interact').addEventListener('click', (e) => {
   if (storyState && ['choice', 'ask', 'onsite'].includes(curLine().type)) e.stopPropagation();
 });
+
+// 出處文字：網址變成連結，其他照原樣
+function sourceItem(src) {
+  const li = document.createElement('li');
+  const m = String(src).match(/https?:\/\/\S+/);
+  if (!m) { li.textContent = src; return li; }
+  const before = src.slice(0, m.index).trim();
+  if (before) li.append(before + ' ');
+  const a = document.createElement('a');
+  a.href = m[0]; a.target = '_blank'; a.rel = 'noopener';
+  try { a.textContent = new URL(m[0]).hostname + ' ↗'; } catch (e) { a.textContent = m[0]; }
+  li.append(a);
+  return li;
+}
+
+document.getElementById('story-fact').addEventListener('click', (e) => {
+  e.stopPropagation();
+  const panel = document.getElementById('story-source');
+  panel.hidden = !panel.hidden;
+  e.currentTarget.setAttribute('aria-expanded', String(!panel.hidden));
+});
+document.getElementById('story-source').addEventListener('click', e => e.stopPropagation());
+
+/* ==========================================
+   解謎頁
+   ========================================== */
+
+function allQuests() {
+  const out = [];
+  for (const spot of SPOTS) {
+    const st = STORIES[spot.id];
+    if (!st) continue;
+    for (const v of st.variants) if (v.lines.length && isQuestVariant(v)) out.push({ spot, v });
+  }
+  return out;
+}
+
+function questInfo(spot, v, date = getStoryDate()) {
+  const key = storyKey(spot.id, v);
+  const q = window.quests.get(key);
+  const state = q && q.status === 'active' ? 'active' : q && q.status === 'done' ? 'done' : 'new';
+  const pick = type => v.lines.map((l, i) => ({ l, i })).filter(x => x.l.type === type);
+  const onsites = pick('onsite'), asks = pick('ask');
+  const solvedN = list => list.filter(x => window.solved.has(puzzleIdFor(spot.id, v, x.l))).length;
+  const pos = state === 'active' ? q.index : 0;
+  // 下一個還沒到過的現場
+  const next = onsites.find(x => x.i >= pos && !window.solved.has(puzzleIdFor(spot.id, v, x.l)))
+            || (state !== 'done' ? onsites.find(x => x.i >= pos) : null);
+  const target = next ? onsiteTarget(next.l, spot) : null;
+  return {
+    key, q, state,
+    available: state === 'active' || matchWhen(v.when, date, gameCtx()),
+    onsite: [solvedN(onsites), onsites.length],
+    ask: [solvedN(asks), asks.length],
+    pct: state === 'done' ? 100 : state === 'active' ? Math.round((q.index / v.lines.length) * 100) : 0,
+    target: target && !target.hidden ? target : null,
+    targetHidden: !!(target && target.hidden),
+  };
+}
+
+// 打卡時：這間神社有哪些現在能玩的解謎
+function availableQuestsAt(spot, date) {
+  return allQuests().filter(x => x.spot.id === spot.id)
+    .map(x => ({ ...x, info: questInfo(x.spot, x.v, date) }))
+    .filter(x => x.info.available && x.info.state !== 'done');
+}
+
+function showQuestHint(list) {
+  const el = document.getElementById('quest-hint');
+  if (!el) return;
+  el.innerHTML = '';
+  el.hidden = !list.length;
+  if (!list.length) return;
+  const p = document.createElement('p');
+  p.textContent = `🧩 這裡有解謎任務：${list.map(x => '「' + x.v.title + '」').join('')}`;
+  const b = document.createElement('button');
+  b.className = 'story-btn primary';
+  b.textContent = list.length === 1 ? (list[0].info.state === 'active' ? '繼續解謎' : '開始解謎') : '前往解謎頁';
+  b.addEventListener('click', () => {
+    if (list.length === 1) openStory(list[0].spot, list[0].v);
+    else switchTab('quest');
+  });
+  el.append(p, b);
+}
+
+function renderQuests() {
+  const listEl = document.getElementById('quest-list');
+  const empty = document.getElementById('quest-empty');
+  if (!listEl) return;
+  listEl.innerHTML = '';
+  const date = getStoryDate();
+  const order = { active: 0, new: 1, locked: 2, done: 3 };
+  const items = allQuests().map(x => {
+    const info = questInfo(x.spot, x.v, date);
+    const group = info.state === 'new' && !info.available ? 'locked' : info.state;
+    return { ...x, info, group };
+  }).sort((a, b) => order[a.group] - order[b.group]);
+
+  empty.style.display = items.length ? 'none' : 'block';
+  const doneN = items.filter(x => x.info.q && x.info.q.doneDate).length;
+  document.getElementById('quest-summary').textContent =
+    items.length ? `完成 ${doneN} / ${items.length} 個任務` : '';
+
+  for (const { spot, v, info, group } of items) {
+    const card = document.createElement('article');
+    card.className = `quest-card ${group}`;
+    const tag = { active: '進行中', new: '未開始', locked: '尚未開放', done: '✓ 已完成' }[group];
+    const when = describeWhen(v.when);
+    card.innerHTML = `
+      <div class="quest-head">
+        <div class="quest-thumb"><img src="${spot.imagePast}" alt="" loading="lazy" onerror="this.replaceWith('⛩️')"></div>
+        <div class="quest-head-text">
+          <div class="quest-spot">${escapeHTML(spot.name)}・${spot.category}</div>
+          <div class="quest-title">${escapeHTML(v.title)}</div>
+        </div>
+        <span class="quest-tag">${tag}</span>
+      </div>
+      <div class="quest-meta">
+        ${info.onsite[1] ? `<span>📍 現場 ${info.onsite[0]}/${info.onsite[1]}</span>` : ''}
+        ${info.ask[1] ? `<span>🧩 謎題 ${info.ask[0]}/${info.ask[1]}</span>` : ''}
+        ${info.q && info.q.updated && group === 'active' ? `<span>上次 ${fmtDateKey(info.q.updated)}</span>` : ''}
+        ${info.q && info.q.doneDate ? `<span>完成於 ${fmtDateKey(info.q.doneDate)}</span>` : ''}
+      </div>
+      ${group !== 'locked' ? `<div class="quest-bar"><i style="width:${info.pct}%"></i></div>` : ''}
+      ${group === 'locked' ? `<div class="quest-lock">🔒 開放條件：${escapeHTML(when)}</div>` : ''}
+      ${info.targetHidden && group !== 'done' ? '<div class="quest-lock">🔍 下一個地點要靠線索推理</div>' : ''}
+      <div class="quest-actions"></div>`;
+
+    const actions = card.querySelector('.quest-actions');
+    const btn = (label, cls, fn) => {
+      const b = document.createElement('button');
+      b.className = 'story-btn ' + cls;
+      b.textContent = label;
+      b.addEventListener('click', fn);
+      actions.appendChild(b);
+    };
+    if (group === 'active') {
+      btn('▶ 繼續', 'primary', () => openStory(spot, v));
+    } else if (group === 'new') {
+      btn('▶ 開始', 'primary', () => openStory(spot, v));
+    } else if (group === 'done') {
+      btn('↻ 再玩一次', 'ghost', () => openStory(spot, v, { restart: true }));
+    }
+    if (info.target && group !== 'done' && group !== 'locked') {
+      btn(info.state === 'active' ? '🧭 前往下一個地點' : '🧭 前往起點', 'ghost', () => {
+        switchTab('gps');
+        setRadarTarget({ lat: info.target.lat, lng: info.target.lng, radius: info.target.radius,
+                         name: `${v.title}・${info.target.custom ? '任務地點' : spot.name}` });
+        if (radar.watchId == null) toggleRadar();
+        document.getElementById('tab-gps').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+    if (group === 'active') {
+      btn('從頭開始', 'ghost', () => {
+        if (confirm(`要從頭開始「${v.title}」嗎？目前的進度會清除（已解開的謎題紀錄會保留）。`)) {
+          openStory(spot, v, { restart: true });
+        }
+      });
+    }
+    listEl.appendChild(card);
+  }
+}
 
 window.onGameDataLoaded = async function () {
   await spotsReady;

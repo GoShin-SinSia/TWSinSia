@@ -73,7 +73,7 @@ function normalizeAIResponse(data, spot) {
     const vs = parseStoryCSV(data.csv, speaker, 'AI');
     if (!vs.length) throw new Error('AI 回傳的 CSV 沒有內容');
     title = data.title || vs[0].title;
-    lines = vs[0].lines;
+    lines = vs[0].lines.map(l => ({ ...l, source: [] }));
   } else if (Array.isArray(data.lines)) {
     lines = data.lines.map((l, i) => {
       if (typeof l === 'string') l = { text: l };
@@ -86,6 +86,7 @@ function normalizeAIResponse(data, spot) {
         image: l.image || '',
         param: Array.isArray(l.param) ? l.param.join('|') : String(l.param || ''),
         hints: Array.isArray(l.hints) ? l.hints.map(String) : splitBar(l.hints),
+        source: [], // AI 寫的一律視為虛構，不標史實
         row: i + 1,
       };
     }).filter(l => l.text || l.type !== 'say');
@@ -122,7 +123,7 @@ function mockAIStory(spot, date) {
   return {
     title: '偶然的相遇（測試）',
     speaker: AI_CONFIG.speaker,
-    lines: lines.map((l, i) => ({ node: '', speaker: '', image: '', param: '', hints: [], row: i + 1, ...l })),
+    lines: lines.map((l, i) => ({ node: '', speaker: '', image: '', param: '', hints: [], source: [], row: i + 1, ...l })),
   };
 }
 
@@ -181,7 +182,7 @@ function serializeAIStory(v) {
   };
 }
 function deserializeAIStory(key, data) {
-  const lines = (data.lines || []).map((l, i) => ({ hints: [], row: i + 1, ...l }));
+  const lines = (data.lines || []).map((l, i) => ({ hints: [], row: i + 1, ...l, source: [] }));
   const nodes = {};
   lines.forEach((l, i) => { if (l.node) nodes[l.node] = i; });
   return { key: key.split(':').slice(1).join(':'), title: data.title, speaker: data.speaker, lines, nodes, when: null, ai: true };

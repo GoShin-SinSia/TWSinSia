@@ -222,6 +222,9 @@ function showModalPhoto(mode) {
     modalPhoto.src = `images/${id}2.jpeg`;
     modalPhoto.alt = newName;
   }
+
+  // 影像出處（credits.js）
+  renderCredit(document.getElementById("modalPhotoCredit"), `images/${id}${mode === "past" ? 1 : 2}.jpeg`);
 }
 
 pastBtn.addEventListener("click", function () {

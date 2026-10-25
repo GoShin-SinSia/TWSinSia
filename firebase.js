@@ -54,6 +54,7 @@ onAuthStateChanged(auth, async (user) => {
   window.items           = new Map(Object.entries(data.items || {}));
   window.solved          = new Set(data.solved || []);
   window.earnedBadges    = new Map(Object.entries(data.badges || {}));
+  window.quests          = new Map(Object.entries(data.quests || {}));
   window.aiStories       = new Map(
     Object.entries(data.aiStories || {}).map(([k, v]) => [k, deserializeAIStory(k, v)])
   );
@@ -74,6 +75,7 @@ window.saveProgress = async function () {
     items:     Object.fromEntries(window.items || []),
     solved:    [...(window.solved || [])],
     badges:    Object.fromEntries(window.earnedBadges || []),
+    quests:    Object.fromEntries(window.quests || []),
     aiStories,
   }, { merge: true });
 };

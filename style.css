@@ -463,3 +463,14 @@ body {
   box-shadow: 0 6px 32px var(--shadow);
   overflow: hidden;
 }
+/* 影像出處 */
+.photo-credit {
+  margin-top: 6px;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--ink-light);
+  opacity: 0.85;
+}
+.photo-credit:empty { display: none; }
+.photo-credit a { color: var(--red-dark); }
+.photo-credit.credit-missing { color: #B8860B; }

@@ -98,6 +98,7 @@ function parseStoryCSV(text, defaultSpeaker = '', fileName = '') {
       image: (r['圖片'] || '').trim(),
       param,
       hints: splitBar(r['提示']).map(unescapeText),
+      source: splitBar(r['出處']),   // 有填 = 可查證的史實
       row: i + 2, // CSV 第幾列，除錯用
     });
   });
@@ -216,6 +217,25 @@ function storyPriority(when) {
   return p;
 }
 
+// 含有「問答」或「現場」的劇情 = 解謎任務（會出現在解謎頁、會存檔）
+function isQuestVariant(v) {
+  return !!v && v.lines.some(l => l.type === 'ask' || l.type === 'onsite');
+}
+
+// 把觸發條件翻成玩家看得懂的話
+function describeWhen(when) {
+  if (!when) return '';
+  const parts = [];
+  if (when.dates) parts.push(when.dates.map(d => d.replace('-', '月') + '日').join('、'));
+  if (when.hatsuuma) parts.push('農曆二月初午日');
+  if (when.months) parts.push(when.months.join('、') + '月');
+  if (when.day) parts.push('每月' + when.day.join('、') + '日');
+  if (when.weekdays) parts.push('星期' + when.weekdays.map(d => '日一二三四五六'[d]).join('、'));
+  if (when.items) parts.push('帶著「' + when.items.join('」「') + '」');
+  if (when.stamps) parts.push('先集到 ' + when.stamps.length + ' 間指定神社的章');
+  return parts.join('，');
+}
+
 function storyKey(spotId, variant) {
   return `${spotId}:${variant.key}`;
 }
@@ -239,10 +259,11 @@ function getStoryVariants(spotId) {
 }
 
 // 選出今天要播放的劇情；沒有就回傳 null
-function pickStoryVariant(spotId, date, unlocked, ctx = {}) {
+function pickStoryVariant(spotId, date, unlocked, ctx = {}, { excludeQuests = false } = {}) {
   const s = STORIES[spotId];
   if (!s) return null;
-  const matched = s.variants.filter(v => v.lines.length && matchWhen(v.when, date, ctx));
+  const matched = s.variants.filter(v => v.lines.length && matchWhen(v.when, date, ctx)
+    && !(excludeQuests && isQuestVariant(v)));
   if (!matched.length) return null;
   const top = Math.max(...matched.map(v => storyPriority(v.when)));
   const cands = matched.filter(v => storyPriority(v.when) === top);
@@ -251,5 +272,5 @@ function pickStoryVariant(spotId, date, unlocked, ctx = {}) {
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { parseStoryCSV, parseWhen, matchWhen, storyPriority, pickStoryVariant, STORIES };
+  module.exports = { parseStoryCSV, parseWhen, matchWhen, storyPriority, pickStoryVariant, isQuestVariant, describeWhen, STORIES };
 }

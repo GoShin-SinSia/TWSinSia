@@ -544,3 +544,190 @@
   .badge-pop-seal.stamp-in,
   .story-input.shake { animation: none !important; }
 }
+/* ==========================================
+   影像出處
+   ========================================== */
+.photo-credit {
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--ink-light);
+  opacity: 0.85;
+}
+.photo-credit:empty { display: none; }
+.photo-credit a { color: var(--red-dark); }
+.photo-credit.credit-missing { color: #B8860B; opacity: 1; }
+.modal .photo-credit { margin: -2px 0 6px; }
+
+/* 劇情背景的出處：疊在照片右上 */
+.story-credit {
+  position: absolute;
+  top: 46px;
+  right: 12px;
+  max-width: 70%;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(0,0,0,0.4);
+  color: rgba(253,246,233,0.85);
+  text-align: right;
+}
+.story-credit a { color: var(--gold); }
+.story-credit.credit-missing { color: #F5D78E; }
+
+/* ==========================================
+   史實標記
+   ========================================== */
+.story-fact {
+  position: absolute;
+  top: -13px;
+  right: 14px;
+  padding: 2px 10px;
+  border: 1px solid #2F5D50;
+  border-radius: 99px;
+  background: #E6F0EC;
+  color: #2F5D50;
+  font-family: 'Noto Serif TC', serif;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.story-fact[hidden] { display: none; }
+.story-fact[aria-expanded="true"] { background: #2F5D50; color: #fff; }
+.story-source {
+  margin: 4px 0 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #EEF4F1;
+  border-left: 3px solid #2F5D50;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: #24443B;
+  cursor: default;
+  max-height: 30vh;
+  overflow-y: auto;
+}
+.story-source[hidden] { display: none; }
+.story-source-title { font-weight: 700; margin-bottom: 2px; }
+.story-source ul { padding-left: 1.2em; }
+.story-source a { color: #2F5D50; }
+.story-source-note { margin-top: 6px; font-size: 11px; opacity: 0.75; }
+
+/* 「從上次的進度繼續」 */
+.story-toast {
+  position: absolute;
+  top: 84px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: 99px;
+  background: rgba(253,246,233,0.95);
+  color: var(--ink);
+  font-size: 13px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+}
+.story-toast.show { animation: toast 2.6s ease both; }
+@keyframes toast {
+  0% { opacity: 0; transform: translate(-50%, -6px); }
+  12%, 80% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; }
+}
+
+/* ==========================================
+   解謎頁
+   ========================================== */
+.quest-intro {
+  margin-bottom: 14px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--ink-light);
+}
+.quest-summary { margin-top: 4px; font-weight: 700; color: var(--red-dark); }
+.quest-summary:empty { display: none; }
+.quest-list { display: grid; gap: 12px; }
+
+.quest-card {
+  padding: 14px;
+  background: var(--cream);
+  border: 1.5px solid var(--gold-deep);
+  border-radius: 14px;
+  display: grid;
+  gap: 10px;
+}
+.quest-card.active {
+  border-color: var(--red-dark);
+  box-shadow: 0 4px 14px rgba(144,46,34,0.14);
+  background: linear-gradient(135deg, #fff 0%, var(--cream) 100%);
+}
+.quest-card.locked { opacity: 0.7; border-style: dashed; }
+.quest-card.done { background: rgba(227,194,151,0.18); }
+
+.quest-head { display: flex; gap: 12px; align-items: center; }
+.quest-thumb {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--gold-deep);
+  display: grid;
+  place-items: center;
+  background: var(--gold-light);
+  font-size: 22px;
+}
+.quest-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.quest-card.locked .quest-thumb { filter: grayscale(1); }
+.quest-head-text { flex: 1; min-width: 0; }
+.quest-spot { font-size: 12px; color: var(--ink-light); }
+.quest-title {
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--ink);
+  letter-spacing: 0.05em;
+}
+.quest-tag {
+  flex-shrink: 0;
+  padding: 2px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid var(--gold-deep);
+  color: var(--ink-light);
+}
+.quest-card.active .quest-tag { background: var(--red-dark); color: var(--gold); border-color: var(--red-dark); }
+.quest-card.done .quest-tag { background: #d4edda; color: #155724; border-color: #c3e6cb; }
+
+.quest-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--ink-light); }
+.quest-bar { height: 6px; border-radius: 99px; background: rgba(144,46,34,0.12); overflow: hidden; }
+.quest-bar i { display: block; height: 100%; background: var(--red-dark); border-radius: 99px; transition: width 0.4s; }
+.quest-lock {
+  font-size: 12px;
+  color: var(--ink-light);
+  padding: 6px 10px;
+  border: 1px dashed var(--gold-deep);
+  border-radius: 8px;
+}
+.quest-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.quest-actions .story-btn { font-size: 13px; padding: 8px 12px; }
+
+.quest-hint {
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1.5px solid var(--red-dark);
+  background: #fff;
+  display: grid;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--ink);
+}
+.quest-hint[hidden] { display: none; }
+
+@media (max-width: 480px) {
+  .tab { padding: 9px 8px; font-size: 13px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .story-toast.show { animation: none; opacity: 1; }
+}

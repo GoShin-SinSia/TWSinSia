@@ -57,6 +57,7 @@
     <!-- 分頁 -->
     <nav class="tabs">
       <button class="tab active" data-tab="gallery" onclick="switchTab('gallery')">圖鑑</button>
+      <button class="tab" data-tab="quest" onclick="switchTab('quest')">解謎</button>
       <button class="tab" data-tab="gps" onclick="switchTab('gps')">GPS 尋路</button>
       <button class="tab" data-tab="collected" onclick="switchTab('collected')">已集章</button>
       <button class="tab" data-tab="bag" onclick="switchTab('bag')">行囊</button>
@@ -77,6 +78,19 @@
       </div>
 
       <div class="grid" id="gallery-grid"></div>
+    </section>
+
+    <!-- 解謎頁 -->
+    <section id="tab-quest" class="section">
+      <div class="quest-intro">
+        <p>跟著線索走到現場、找出遺構、解開謎題。<br>進度會自動存檔，可以分好幾天、好幾個地點慢慢完成。</p>
+        <p class="quest-summary" id="quest-summary"></p>
+      </div>
+      <div class="quest-list" id="quest-list"></div>
+      <div id="quest-empty" class="empty-hint" style="display:none">
+        <span class="empty-icon">🧩</span>
+        <p>解謎任務準備中，敬請期待。</p>
+      </div>
     </section>
 
     <!-- GPS 打卡頁 -->
@@ -132,6 +146,7 @@
           <div class="nearest-dist" id="nearest-dist">—</div>
         </div>
         <div id="result-banner" class="result-banner" style="display:none"></div>
+        <div id="quest-hint" class="quest-hint" hidden></div>
       </div>
     </section>
 
@@ -161,6 +176,7 @@
     <div class="modal">
       <div class="modal-img" id="modal-img"></div>
       <div class="modal-photo-label" id="modal-photo-label"></div>
+      <div class="photo-credit" id="modal-photo-credit"></div>
 
       <!-- 過去/現在切換（已集章才顯示） -->
       <div class="modal-photo-tabs" id="modal-photo-tabs" style="display:none">
@@ -191,8 +207,12 @@
         <button class="story-skip" onclick="closeStory()">略過 ✕</button>
       </div>
       <div class="story-seal" id="story-seal" aria-hidden="true">解鎖</div>
+      <div class="story-toast" id="story-toast" role="status"></div>
+      <div class="story-credit photo-credit" id="story-credit"></div>
       <div class="story-box" id="story-box" tabindex="0" onclick="advanceStory()">
         <div class="story-speaker" id="story-speaker"></div>
+        <button type="button" class="story-fact" id="story-fact" hidden aria-expanded="false" aria-controls="story-source" title="這句台詞有史料出處">📖 史實</button>
+        <div class="story-source" id="story-source" hidden></div>
         <p class="story-text" id="story-text" aria-live="polite"></p>
         <!-- 選項、答題框、現場關卡、道具卡會出現在這裡 -->
         <div class="story-interact" id="story-interact"></div>
@@ -216,6 +236,7 @@
   </div>
 
   <script src="csv.js"></script>
+  <script src="credits.js"></script>
   <script src="data.js"></script>
   <script src="story.js"></script>
   <script src="ai.js"></script>
