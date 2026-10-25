@@ -385,13 +385,42 @@ function stopRadar() {
   document.getElementById('status-text').textContent = '已停止追蹤';
 }
 
+// 兩個角度之間的最短差（-180 ~ 180）
+function angleDelta(from, to) {
+  return ((to - from + 540) % 360) - 180;
+}
+
 function onOrientation(e) {
   let h = null;
-  if (typeof e.webkitCompassHeading === 'number') h = e.webkitCompassHeading;
-  else if (e.absolute && e.alpha != null) h = (360 - e.alpha) % 360;
-  if (h == null) return;
-  radar.heading = h;
-  drawRadar();
+  if (typeof e.webkitCompassHeading === 'number') h = e.webkitCompassHeading;   // iPhone
+  else if (e.absolute && e.alpha != null) h = 360 - e.alpha;                     // Android
+  if (h == null || isNaN(h)) return;
+  // 手機橫拿時要補上螢幕旋轉角度
+  const screenAngle = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+  h = (h + screenAngle + 360) % 360;
+
+  // 指南針很吵：小於 2° 的抖動不理，其餘平滑跟上
+  if (radar.heading == null) radar.heading = h;
+  else {
+    const d = angleDelta(radar.heading, h);
+    if (Math.abs(d) < 2) return;
+    radar.heading = (radar.heading + d * 0.3 + 360) % 360;
+  }
+  requestRadarDraw();
+}
+
+// 感應器一秒會觸發幾十次，合併成每個畫面最多畫一次
+let _radarFrame = 0;
+function requestRadarDraw() {
+  if (_radarFrame) return;
+  _radarFrame = requestAnimationFrame(() => { _radarFrame = 0; drawRadar(); });
+}
+
+// 讓旋轉角度連續（避免從 359° 轉到 1° 時倒轉一整圈）
+const _rot = { arrow: 0, north: 0 };
+function setRotation(name, el, deg, apply) {
+  _rot[name] += angleDelta(_rot[name], deg);
+  apply(el, _rot[name]);
 }
 
 function drawRadar() {
@@ -419,8 +448,8 @@ function drawRadar() {
   const d = haversine(radar.pos.lat, radar.pos.lng, t.lat, t.lng);
   const b = bearing(radar.pos.lat, radar.pos.lng, t.lat, t.lng);
   const h = radar.heading ?? 0;
-  arrow.style.transform = `rotate(${b - h}deg)`;
-  dial.style.setProperty('--north', `${-h}deg`);
+  setRotation('arrow', arrow, b - h, (el, r) => { el.style.transform = `rotate(${r}deg)`; });
+  setRotation('north', dial, -h, (el, r) => { el.style.setProperty('--north', `${r}deg`); });
   document.getElementById('radar-compass-note').textContent =
     radar.heading == null ? '沒有指南針：圓盤上方 = 北方' : '箭頭會跟著手機轉向';
 
