@@ -474,3 +474,234 @@ body {
 .photo-credit:empty { display: none; }
 .photo-credit a { color: var(--red-dark); }
 .photo-credit.credit-missing { color: #B8860B; }
+
+/* =====================
+   標題：電腦顯示「臺灣神社模擬器」，手機顯示「消失の神界」
+   ===================== */
+.title-mobile { display: none; }
+
+/* 按鈕現在放在 #controls 框裡 */
+#controls .button_wrapper { margin: 16px 0 0; }
+
+/* 分類 chip 選取狀態 */
+.count-chip { transition: background 0.15s, color 0.15s, box-shadow 0.15s; }
+.count-chip.guan.active  { background: var(--red-dark); color: var(--gold-light); border-color: var(--red-dark); }
+.count-chip.xian.active  { background: var(--gold-deep); color: #fff; border-color: var(--gold-deep); }
+.count-chip.xiang.active { background: var(--ink); color: var(--gold-light); border-color: var(--ink); }
+
+/* =====================
+   地圖標記（依社格上色）
+   ===================== */
+.shrine-pin { background: none; border: none; }
+.shrine-pin span {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  border: 2px solid var(--cream);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 700;
+  font-size: 13px;
+  color: #fff;
+  background: var(--ink-light);
+}
+.shrine-pin.guan span  { background: var(--red-dark); }
+.shrine-pin.xian span  { background: #A9853F; }
+.shrine-pin.xiang span { background: var(--ink); }
+/* 文字轉正 */
+.shrine-pin span i { font-style: normal; line-height: 1; transform: rotate(45deg); }
+
+/* 定位按鈕 */
+.locate-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid rgba(0,0,0,0.15);
+  background: #fff;
+  color: var(--red-dark);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.locate-btn.loading { animation: locate-spin 1s linear infinite; }
+@keyframes locate-spin { to { transform: rotate(360deg); } }
+
+/* =====================
+   神社詳情（共用）
+   ===================== */
+.sheet-handle { display: none; }
+.photo-tabs button.active {
+  background: var(--red-dark);
+  color: var(--gold);
+  border-color: var(--red-dark);
+}
+.popup-photo { height: auto; aspect-ratio: 16 / 10; background: var(--gold-light); }
+.place-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.place-cat {
+  padding: 1px 10px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--ink-light);
+}
+.place-cat.guan  { background: var(--red-dark); }
+.place-cat.xian  { background: #A9853F; }
+.place-cat.xiang { background: var(--ink); }
+.place-period {
+  font-family: 'Noto Serif TC', serif;
+  font-weight: 700;
+  color: var(--ink-light);
+  letter-spacing: 0.05em;
+}
+.place-addr { font-size: 13px; color: var(--ink-light); margin-bottom: 8px; }
+.place-desc { font-size: 14px; line-height: 1.8; }
+.place-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 16px;
+}
+.place-act {
+  display: block;
+  padding: 11px 8px;
+  border: 1.5px solid var(--gold-deep);
+  border-radius: 10px;
+  text-align: center;
+  text-decoration: none;
+  font-family: 'Noto Serif TC', serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--red-dark);
+  background: #fff;
+}
+.place-act.primary { background: var(--red-dark); color: var(--gold); border-color: var(--red-dark); }
+
+/* =====================
+   手機版（寬度 ≤ 640px）
+   標題 → 按鈕框（顯示全部｜集點卡）→ 地圖填滿剩下的畫面
+   ===================== */
+@media (max-width: 640px) {
+  html, body { height: 100%; }
+  body {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;   /* 扣掉手機網址列 */
+    overflow: hidden;
+  }
+
+  .top-border-pattern { height: 6px; flex-shrink: 0; }
+  .footer-pattern { display: none; }
+
+  /* 標題 */
+  .site-header {
+    flex-shrink: 0;
+    padding: calc(14px + env(safe-area-inset-top)) 16px 14px;
+  }
+  .site-header::before { font-size: 150px; top: -34px; }
+  .header-ornament,
+  .header-subtitle-line,
+  .header-desc { display: none; }
+  .site-header h1 {
+    margin: 0;
+    font-size: 32px;
+    letter-spacing: 10px;
+    text-indent: 10px; /* 抵銷最後一個字後面的字距，看起來才置中 */
+  }
+  .title-desktop { display: none; }
+  .title-mobile { display: inline; }
+
+  /* 按鈕框 */
+  .controls_wrapper {
+    flex-shrink: 0;
+    margin: 0;
+    padding: 12px 12px 0;
+  }
+  #controls {
+    padding: 12px;
+    border-radius: 14px;
+  }
+  #controls::before, #controls::after { display: none; }
+
+  .count-row { flex-wrap: nowrap; gap: 6px; }
+  .count-chip {
+    flex: 1;
+    justify-content: center;
+    gap: 4px;
+    padding: 6px 4px;
+    font-size: 12px;
+    letter-spacing: 0;
+    white-space: nowrap;
+  }
+  .count-chip:hover { transform: none; }
+  .count-icon { font-size: 13px; }
+
+  #controls .button_wrapper {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  #viewAll, .nav-btn {
+    justify-content: center;
+    padding: 12px 6px;
+    font-size: 15px;
+    letter-spacing: 1px;
+    border-radius: 12px;
+  }
+
+  /* 地圖：填滿剩下的高度 */
+  .map-frame {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    max-width: none;
+    padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+  }
+  #map {
+    height: 100%;
+    border-width: 2px;
+    border-radius: 14px;
+  }
+  .leaflet-control-zoom { display: none; } /* 手機用兩指縮放 */
+  .leaflet-control-attribution { font-size: 9px; }
+
+  /* 詳情：從下方滑出 */
+  .place-modal { align-items: flex-end; }
+  .modal-card {
+    width: 100%;
+    max-height: 80dvh;
+    border-radius: 20px 20px 0 0;
+    border-bottom: none;
+    padding: 6px 18px calc(18px + env(safe-area-inset-bottom));
+    animation: sheet-up 0.28s cubic-bezier(.2, .8, .3, 1);
+    transition: transform 0.2s;
+    overscroll-behavior: contain;
+  }
+  .sheet-handle {
+    display: block;
+    width: 44px;
+    height: 5px;
+    margin: 4px auto 12px;
+    border-radius: 3px;
+    background: var(--gold-deep);
+    opacity: 0.7;
+  }
+  .close-modal { top: 8px; right: 10px; width: 40px; height: 40px; }
+  .modal-card h3 { font-size: 20px; margin-bottom: 10px; }
+  .photo-tabs button { padding: 7px 22px; font-size: 14px; }
+}
+
+@keyframes sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-card { animation: none; }
+  .locate-btn.loading { animation: none; opacity: 0.6; }
+}
+
+.photo-title:empty { display: none; }

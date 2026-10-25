@@ -2,12 +2,14 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#902E22" />
   <title>神社模擬器</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700;900&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="style.css" />
 </head>
 
@@ -18,7 +20,7 @@
 
   <header class="site-header">
     <div class="header-ornament">✦</div>
-    <h1>臺灣神社模擬器</h1>
+    <h1><span class="title-desktop">臺灣神社模擬器</span><span class="title-mobile">消失の神界</span></h1>
     <div class="header-subtitle-line">
       <span class="line-deco"></span>
       <span class="subtitle-text">穿越時光・尋訪神祇</span>
@@ -29,51 +31,50 @@
 
   <div class="controls_wrapper">
     <div id="controls">
-      <div class="controls-inner">        
-        <div class="count-row">
+      <div class="count-row" role="group" aria-label="依社格篩選">
 
-          <button class="count-chip guan" id="showGuan">
-            <span class="count-icon">🏯</span>
-            <span id="guanCount">官社：0</span>
-          </button>
+        <button class="count-chip guan" id="showGuan" data-cat="官社" aria-pressed="false">
+          <span class="count-icon">🏯</span>
+          <span id="guanCount">官社：0</span>
+        </button>
 
-          <button class="count-chip xian" id="showXian">
-            <span class="count-icon">⛩</span>
-            <span id="xianCount">縣社：0</span>
-          </button>
+        <button class="count-chip xian" id="showXian" data-cat="縣社" aria-pressed="false">
+          <span class="count-icon">⛩</span>
+          <span id="xianCount">縣社：0</span>
+        </button>
 
-          <button class="count-chip xiang" id="showXiang">
-            <span class="count-icon">🏮</span>
-            <span id="xiangCount">鄉社：0</span>
-          </button>  
+        <button class="count-chip xiang" id="showXiang" data-cat="鄉社" aria-pressed="false">
+          <span class="count-icon">🏮</span>
+          <span id="xiangCount">鄉社：0</span>
+        </button>
 
-        </div>
+      </div>
+
+      <div class="button_wrapper">
+        <button id="viewAll">
+          <span class="btn-icon">⊕</span> 顯示全部神社
+        </button>
+        <a href="card.html" class="nav-btn">
+          <span class="btn-icon">🎴</span> 集點卡
+        </a>
       </div>
     </div>
-  </div>
-
-  <div class="button_wrapper">
-    <button id="viewAll">
-      <span class="btn-icon">⊕</span> 顯示全部神社
-    </button>
-    <a href="card.html" class="nav-btn">
-      <span class="btn-icon">🎴</span> 集點卡
-    </a>
   </div>
 
   <div class="map-frame">
     <div id="map"></div>
   </div>
 
-  <div id="placeModal" class="place-modal hidden">
+  <div id="placeModal" class="place-modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal-card">
-      <button id="closeModal" class="close-modal">×</button>
+      <div class="sheet-handle" aria-hidden="true"></div>
+      <button id="closeModal" class="close-modal" aria-label="關閉">×</button>
 
       <h3 id="modalTitle"></h3>
 
-      <div class="photo-tabs">
-        <button id="pastBtn">過去</button>
-        <button id="nowBtn">現在</button>
+      <div class="photo-tabs" role="group" aria-label="照片">
+        <button id="pastBtn" data-mode="past">過去</button>
+        <button id="nowBtn" data-mode="now">現在</button>
       </div>
 
       <div id="modalPhotoTitle" class="photo-title"></div>
@@ -82,10 +83,17 @@
       <div id="modalPhotoCredit" class="photo-credit"></div>
 
       <div class="popup-info">
-        <p><strong>地址：</strong><span id="modalAddress"></span></p>
-        <p><strong>開始年份：</strong><span id="modalStartYear"></span></p>
-        <p><strong>結束年份：</strong><span id="modalEndYear"></span></p>
-        <p><strong>說明：</strong><span id="modalDescription"></span></p>
+        <div class="place-meta">
+          <span id="modalCategory" class="place-cat"></span>
+          <span id="modalPeriod" class="place-period"></span>
+        </div>
+        <p class="place-addr">📍 <span id="modalAddress"></span></p>
+        <p class="place-desc" id="modalDescription"></p>
+      </div>
+
+      <div class="place-actions">
+        <a id="modalNav" class="place-act" target="_blank" rel="noopener">🧭 導航過去</a>
+        <a href="card.html" class="place-act primary">🎴 去集點卡打卡</a>
       </div>
     </div>
   </div>
@@ -93,7 +101,7 @@
   <!-- 底部裝飾 -->
   <div class="footer-pattern"></div>
 
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="csv.js"></script>
   <script src="credits.js"></script>
   <script src="script.js"></script>

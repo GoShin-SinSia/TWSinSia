@@ -1,82 +1,83 @@
-// 儲存當前年份可見的廟宇資料
-let places = []; 
-let markers = []; 
+/**
+ * script.js — 地圖首頁
+ * 手機（寬度 ≤ 640px）：點標記直接從下方滑出詳情；電腦：先出小視窗再看詳情
+ * 需要先載入 leaflet.js、csv.js、credits.js
+ */
+
+let places = [];
+let markers = [];
+let activeCategory = null; // null = 全部
 
 // 設定外部 Wiki 的網域名稱 (目前先用佔位符，決定平台後可修改此處，例如 "https://zh.wikipedia.org/wiki")
 const WIKI_DOMAIN = "https://your-wiki-domain.com";
 
+const isMobile = () => window.matchMedia("(max-width: 640px)").matches;
+
 // 初始化 Leaflet 地圖，中心點預設在臺北
-const map = L.map("map").setView([25.0173, 121.5397], 15);
+const map = L.map("map", { zoomControl: true }).setView([25.0173, 121.5397], 15);
 
 L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  attribution: "© OpenStreetMap"
+  attribution: "© OpenStreetMap",
+  maxZoom: 19,
 }).addTo(map);
 
 // 取得 HTML 元素
 const xiangCount = document.getElementById("xiangCount");
 const guanCount = document.getElementById("guanCount");
 const xianCount = document.getElementById("xianCount");
-const showXiang = document.getElementById("showXiang");
-const showGuan = document.getElementById("showGuan");
-const showXian = document.getElementById("showXian");
 const viewAll = document.getElementById("viewAll");
+const chips = document.querySelectorAll(".count-chip");
 
-// 讀取 CSV
+/* ==========================================
+   讀取 temple.csv
+   ========================================== */
 
 async function loadCSV() {
-  const response = await fetch("temple.csv");
-  const text = await response.text();
-  const rows = text.trim().split("\n");
-  const headers = rows[0].split(",").map(h => h.trim());
-
-  places = rows.slice(1).map(row => {
-    const values = row.split(",");
-    const place = {};
-
-    headers.forEach((header, index) => {
-      place[header] = values[index]?.trim();
-    });
-
+  const text = await fetchCSVText("temple.csv");
+  places = csvToObjects(text, { lastJoin: true }).map(place => {
     place.id = Number(place.id || place.編號);
     place.lat = Number(place.lat || place.緯度);
     place.lng = Number(place.lng || place.經度);
     place.category = getCategoryById(place.id);
-
     return place;
-  });
+  }).filter(p => !isNaN(p.id));
 }
 
 // 用編號判斷分類
-
 function getCategoryById(id) {
-  if ((id >= 101 && id <= 108) || (id >= 201 && id <= 212)) {
-    return "鄉社";
-  }
-
-  if ((id >= 109 && id <= 112) || id == 301) {
-    return "官社";
-  }
-
-  if (id >= 302 && id <= 312) {
-    return "縣社";
-  }
-
+  if ((id >= 101 && id <= 108) || (id >= 201 && id <= 212)) return "鄉社";
+  if ((id >= 109 && id <= 112) || id == 301) return "官社";
+  if (id >= 302 && id <= 312) return "縣社";
   return "未分類";
 }
 
-// 更新統計
-
 function updateCounts() {
-  const xiangTotal = places.filter(place => place.category === "鄉社").length;
-  const guanTotal = places.filter(place => place.category === "官社").length;
-  const xianTotal = places.filter(place => place.category === "縣社").length;
-
-  xiangCount.textContent = `鄉社：${xiangTotal}`;
-  guanCount.textContent = `官社：${guanTotal}`;
-  xianCount.textContent = `縣社：${xianTotal}`;
+  const n = cat => places.filter(p => p.category === cat).length;
+  xiangCount.textContent = `鄉社：${n("鄉社")}`;
+  guanCount.textContent = `官社：${n("官社")}`;
+  xianCount.textContent = `縣社：${n("縣社")}`;
 }
 
-// 顯示地圖標記
+/* ==========================================
+   標記：依社格上色，標記上寫「官／縣／鄉」
+   ========================================== */
+
+const CAT_CLASS = { "官社": "guan", "縣社": "xian", "鄉社": "xiang" };
+
+function shrineIcon(category) {
+  const cls = CAT_CLASS[category] || "other";
+  return L.divIcon({
+    className: `shrine-pin ${cls}`,
+    html: `<span><i>${(category || "社").charAt(0)}</i></span>`,
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -30],
+  });
+}
+
+function escapeHTML(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
 
 function renderMap(targetPlaces) {
   markers.forEach(marker => map.removeLayer(marker));
@@ -84,110 +85,141 @@ function renderMap(targetPlaces) {
 
   targetPlaces.forEach(place => {
     if (!place.lat || !place.lng) return;
-    const marker = L.marker([place.lat, place.lng])
-      .addTo(map)
-      .bindPopup(`
-        <div class="mini-popup">
-          <strong>${place.名稱}</strong>
-          <button onclick="openPlaceModalById('${place.編號}')">
-            詳細資訊
-          </button>
-        </div>
-      `, {
-        autoPan: true
-      });
+    const marker = L.marker([place.lat, place.lng], {
+      icon: shrineIcon(place.category),
+      title: place.名稱,
+      alt: place.名稱,
+      riseOnHover: true,
+    }).addTo(map);
+
+    marker.on("click", () => {
+      if (isMobile()) {
+        openPlaceModal(place);
+        return;
+      }
+      L.popup({ autoPan: true, offset: [0, -28] })
+        .setLatLng(marker.getLatLng())
+        .setContent(`
+          <div class="mini-popup">
+            <strong>${escapeHTML(place.名稱)}</strong>
+            <button onclick="openPlaceModalById('${place.編號}')">詳細資訊</button>
+          </div>`)
+        .openOn(map);
+    });
 
     markers.push(marker);
   });
-
 }
 
-// 顯示特定分類
+function fitMarkers() {
+  if (!markers.length) return;
+  map.fitBounds(L.featureGroup(markers).getBounds(), {
+    padding: isMobile() ? [30, 30] : [50, 50],
+    maxZoom: 15,
+  });
+}
+
+/* ==========================================
+   篩選
+   ========================================== */
+
+function setActiveChip(category) {
+  activeCategory = category;
+  chips.forEach(chip => {
+    const on = chip.dataset.cat === category;
+    chip.classList.toggle("active", on);
+    chip.setAttribute("aria-pressed", String(on));
+  });
+}
 
 function showCategory(category) {
-  const filteredPlaces = places.filter(
-    place => place.category === category
-  );
-
-  renderMap(filteredPlaces);
-
-  if (markers.length > 0) {
-    const group = L.featureGroup(markers);
-    map.fitBounds(group.getBounds(), {
-      padding: [50, 50]
-    });
-  }
+  // 再按一次已選的分類 = 取消篩選
+  if (activeCategory === category) { showAllPlaces(); return; }
+  setActiveChip(category);
+  renderMap(places.filter(place => place.category === category));
+  fitMarkers();
 }
-
-// 顯示全部
 
 function showAllPlaces() {
+  setActiveChip(null);
   renderMap(places);
+  fitMarkers();
 }
 
-// 顯示全部並自動縮放
+chips.forEach(chip => chip.addEventListener("click", () => showCategory(chip.dataset.cat)));
+viewAll.addEventListener("click", showAllPlaces);
 
-function fitAllMarkers() {
-  if (markers.length > 0) {
-    const group = L.featureGroup(markers);
-    map.fitBounds(group.getBounds(), {
-      padding: [50, 50]
+/* ==========================================
+   定位按鈕（地圖右下角）
+   ========================================== */
+
+let meMarker = null;
+const LocateControl = L.Control.extend({
+  options: { position: "bottomright" },
+  onAdd() {
+    const btn = L.DomUtil.create("button", "locate-btn");
+    btn.type = "button";
+    btn.title = "我的位置";
+    btn.setAttribute("aria-label", "移到我的位置");
+    btn.innerHTML = "◎";
+    L.DomEvent.disableClickPropagation(btn);
+    L.DomEvent.on(btn, "click", () => {
+      btn.classList.add("loading");
+      map.locate({ setView: true, maxZoom: 16, enableHighAccuracy: true });
     });
+    return btn;
+  },
+});
+map.addControl(new LocateControl());
+
+map.on("locationfound", (e) => {
+  document.querySelector(".locate-btn")?.classList.remove("loading");
+  if (!meMarker) {
+    meMarker = L.circleMarker(e.latlng, {
+      radius: 8, color: "#fff", weight: 3, fillColor: "#2B7BE4", fillOpacity: 1,
+    }).addTo(map);
+  } else {
+    meMarker.setLatLng(e.latlng);
   }
-}
-
-// 按鈕事件
-
-showXiang.addEventListener("click", function () {
-  showCategory("鄉社");
+});
+map.on("locationerror", (e) => {
+  document.querySelector(".locate-btn")?.classList.remove("loading");
+  alert("無法取得位置：" + e.message);
 });
 
-showGuan.addEventListener("click", function () {
-  showCategory("官社");
-});
+// 手機轉向、網址列收合時重新計算地圖大小
+window.addEventListener("resize", () => map.invalidateSize());
 
-showXian.addEventListener("click", function () {
-  showCategory("縣社");
-});
-
-viewAll.addEventListener("click", function () {
-  showAllPlaces();
-  fitAllMarkers();
-});
-
-// 網頁載入後讀 temple.csv
+/* ==========================================
+   啟動
+   ========================================== */
 
 window.addEventListener("DOMContentLoaded", async () => {
-  await loadCSV();
+  try {
+    await loadCSV();
+  } catch (e) {
+    console.error("temple.csv 載入失敗", e);
+    return;
+  }
   updateCounts();
-  showAllPlaces();
+  renderMap(places);
+  map.invalidateSize();
 });
 
-function showPhoto(id, mode, oldName, newName) {
-  const img = document.getElementById(`photo-img-${id}`);
-  const title = document.getElementById(`photo-title-${id}`);
-  if (mode === "past") {
-    img.src = `images/${id}1.jpeg`;
-    img.alt = oldName;
-    title.textContent = oldName;
-  }
-
-  if (mode === "now") {
-    img.src = `images/${id}2.jpeg`;
-    img.alt = newName;
-    title.textContent = newName;
-  }
-}
+/* ==========================================
+   神社詳情（電腦：置中視窗；手機：從下方滑出）
+   ========================================== */
 
 const placeModal = document.getElementById("placeModal");
-const closeModal = document.getElementById("closeModal");
+const closeModalBtn = document.getElementById("closeModal");
 const modalTitle = document.getElementById("modalTitle");
 const modalPhotoTitle = document.getElementById("modalPhotoTitle");
 const modalPhoto = document.getElementById("modalPhoto");
 const modalAddress = document.getElementById("modalAddress");
-const modalStartYear = document.getElementById("modalStartYear");
-const modalEndYear = document.getElementById("modalEndYear");
+const modalCategory = document.getElementById("modalCategory");
+const modalPeriod = document.getElementById("modalPeriod");
 const modalDescription = document.getElementById("modalDescription");
+const modalNav = document.getElementById("modalNav");
 const pastBtn = document.getElementById("pastBtn");
 const nowBtn = document.getElementById("nowBtn");
 
@@ -195,12 +227,26 @@ let currentPlace = null;
 
 function openPlaceModal(place) {
   currentPlace = place;
-  placeModal.classList.remove("hidden");
+  map.closePopup();
+
+  modalCategory.textContent = place.category;
+  modalCategory.className = "place-cat " + (CAT_CLASS[place.category] || "");
+  const start = place.開始年分 || "不詳";
+  const end = place.結束年分 || "現在";
+  modalPeriod.textContent = `${start} – ${end}`;
   modalAddress.textContent = place.地址 || "暫無資料";
-  modalStartYear.textContent = place.開始年分 || "不詳";
-  modalEndYear.textContent = place.結束年分 || "不詳";
   modalDescription.textContent = place.說明 || "暫無說明";
+  modalNav.href = `https://www.google.com/maps/dir/?api=1&destination=${place.lat},${place.lng}&travelmode=walking`;
+
   showModalPhoto("past");
+  placeModal.querySelector(".modal-card").scrollTop = 0;
+  placeModal.classList.remove("hidden");
+  closeModalBtn.focus({ preventScroll: true });
+}
+
+function closePlaceModal() {
+  placeModal.classList.add("hidden");
+  currentPlace = null;
 }
 
 function showModalPhoto(mode) {
@@ -208,46 +254,60 @@ function showModalPhoto(mode) {
   const id = currentPlace.編號;
   const oldName = currentPlace.名稱;
   const newName = currentPlace.新名稱 || currentPlace.名稱;
+  const src = `images/${id}${mode === "past" ? 1 : 2}.jpeg`;
 
-  if (mode === "past") {
-    modalTitle.textContent = oldName;
-    modalPhotoTitle.textContent = oldName;
-    modalPhoto.src = `images/${id}1.jpeg`;
-    modalPhoto.alt = oldName;
-  }
-
-  if (mode === "now") {
-    modalTitle.textContent = oldName;
-    modalPhotoTitle.textContent = newName;
-    modalPhoto.src = `images/${id}2.jpeg`;
-    modalPhoto.alt = newName;
-  }
+  modalTitle.textContent = oldName;
+  // 過去照片的名稱和標題一樣，不重複顯示；現在照片顯示現址名稱
+  modalPhotoTitle.textContent = mode === "past" ? "" : `現址：${newName}`;
+  modalPhoto.src = src;
+  modalPhoto.alt = mode === "past" ? oldName : newName;
+  pastBtn.classList.toggle("active", mode === "past");
+  nowBtn.classList.toggle("active", mode === "now");
 
   // 影像出處（credits.js）
-  renderCredit(document.getElementById("modalPhotoCredit"), `images/${id}${mode === "past" ? 1 : 2}.jpeg`);
+  renderCredit(document.getElementById("modalPhotoCredit"), src);
 }
 
-pastBtn.addEventListener("click", function () {
-  showModalPhoto("past");
+pastBtn.addEventListener("click", () => showModalPhoto("past"));
+nowBtn.addEventListener("click", () => showModalPhoto("now"));
+closeModalBtn.addEventListener("click", closePlaceModal);
+placeModal.addEventListener("click", (event) => {
+  if (event.target === placeModal) closePlaceModal();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !placeModal.classList.contains("hidden")) closePlaceModal();
 });
 
-nowBtn.addEventListener("click", function () {
-  showModalPhoto("now");
-});
-
-closeModal.addEventListener("click", function () {
-  placeModal.classList.add("hidden");
-});
-
-placeModal.addEventListener("click", function (event) {
-  if (event.target === placeModal) {
-    placeModal.classList.add("hidden");
-  }
-});
+// 手機：把上方的小橫條往下拖就能關閉
+(function enableSwipeDown() {
+  const card = placeModal.querySelector(".modal-card");
+  const handle = placeModal.querySelector(".sheet-handle");
+  let startY = null, dy = 0;
+  const start = (e) => {
+    if (!isMobile()) return;
+    if (e.target !== handle && card.scrollTop > 0) return; // 內容捲動中不攔截
+    startY = e.touches[0].clientY; dy = 0;
+    card.style.transition = "none";
+  };
+  const move = (e) => {
+    if (startY == null) return;
+    dy = Math.max(0, e.touches[0].clientY - startY);
+    if (dy > 0) card.style.transform = `translateY(${dy}px)`;
+  };
+  const end = () => {
+    if (startY == null) return;
+    card.style.transition = "";
+    card.style.transform = "";
+    if (dy > 90) closePlaceModal();
+    startY = null;
+  };
+  card.addEventListener("touchstart", start, { passive: true });
+  card.addEventListener("touchmove", move, { passive: true });
+  card.addEventListener("touchend", end);
+  card.addEventListener("touchcancel", end);
+})();
 
 function openPlaceModalById(id) {
   const place = places.find(place => String(place.編號) === String(id));
-  if (!place) return;
-  openPlaceModal(place);
-  map.closePopup();
+  if (place) openPlaceModal(place);
 }
