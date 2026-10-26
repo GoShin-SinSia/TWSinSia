@@ -23,6 +23,7 @@
 }
 
 body {
+  isolation: isolate;
   font-family: 'Noto Sans TC', sans-serif;
   background-color: var(--cream);
   background-image:
@@ -31,6 +32,20 @@ body {
   color: var(--ink);
   min-height: 100vh;
 }
+
+/* 同色系古紙底色；擴散層只在內容後方，不攔截點擊。 */
+.page-tone {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-color: var(--cream);
+  background-image:
+    radial-gradient(circle at 20% 10%, rgba(227,194,151,0.18) 0%, transparent 55%),
+    radial-gradient(circle at 80% 90%, rgba(144,46,34,0.08) 0%, transparent 55%);
+}
+.page-tone[data-tone="mystery"] { background-color: #eee0c9; }
+.page-tone-wash { filter: blur(16px); inset: -24px; }
 
 /* =====================
    頂底裝飾紋路
@@ -670,10 +685,18 @@ body {
 
 /* Tabs */
 .tabs {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: stretch;
   border-bottom: 1.5px solid var(--gold-deep);
   margin-bottom: 1.25rem;
 }
+
+.tab-group { display: flex; min-width: 0; }
+.tab-group-explore { justify-content: flex-start; }
+.tab-group-mystery { justify-content: flex-end; }
+.tab-group-mystery .tab { background: rgba(196,164,107,.16); }
+.tabs .tab { white-space: nowrap; }
 
 .tab {
   padding: 9px 20px;

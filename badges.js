@@ -9,10 +9,9 @@ const BADGES = [
   {
     id: 'guan-all',
     name: '官社巡禮',
-    seal: '官社\n巡禮',
+    seal: '官社',
     desc: '集齊所有官社的御朱印',
     icon: '🏯',
-    featured: true,
     spots: (all) => all.filter(s => s.category === '官社'),
   },
   {
@@ -24,7 +23,8 @@ const BADGES = [
     spots: (all) => all.filter(s => s.category === '鄉社'),
   },
   {
-    id: 'all', name: '全島巡禮', seal: '全島', desc: '集齊所有神社', icon: '🗾',
+    id: 'all', name: '神社巡禮', seal: '神社\n巡禮', desc: '集齊全部36座神社御朱印', icon: '🗾',
+    featured: true,
     spots: (all) => all,
   },
 ];
@@ -59,6 +59,16 @@ function renderBadgeShelf() {
   const shown = BADGES.filter(b => b.spots(SPOTS).length > 0);
   const featured = shown.filter(b => b.featured);
   const others = shown.filter(b => !b.featured);
+  const filters = { all: 'all', 'guan-all': '官社', 'xian-all': '縣社', 'xiang-all': '鄉社' };
+  const connectFilter = (el, b, p) => {
+    const filter = filters[b.id];
+    el.type = 'button';
+    el.dataset.filter = filter;
+    el.classList.toggle('selected', currentFilter === filter);
+    el.setAttribute('aria-pressed', String(currentFilter === filter));
+    el.setAttribute('aria-label', `${b.name}：${p.have}/${p.total}，顯示${filter === 'all' ? '全部神社' : filter}`);
+    el.addEventListener('click', () => setFilter(filter));
+  };
 
   for (const b of featured) {
     const p = badgeProgress(b);
@@ -72,12 +82,10 @@ function renderBadgeShelf() {
       <div class="badge-seal" aria-hidden="true"><span>${b.seal.replace('\n', '<br>')}</span></div>
       <div class="badge-info">
         <div class="badge-name">${b.icon} ${b.name}</div>
-        <div class="badge-desc">${earned
-          ? `${fmtDateKey(window.earnedBadges.get(b.id))} 達成`
-          : `${b.desc}・${p.have} / ${p.total}`}</div>
-        ${earned ? '' : `<div class="badge-bar"><i style="width:${pct}%"></i></div>`}
+        <div class="badge-desc">${b.desc}・${p.have}/${p.total}</div>
+        <div class="badge-bar" aria-hidden="true"><i style="width:${pct}%"></i></div>
       </div>`;
-    el.addEventListener('click', () => showBadgeDetail(b));
+    connectFilter(el, b, p);
     shelf.appendChild(el);
   }
 
@@ -88,13 +96,26 @@ function renderBadgeShelf() {
     const earned = window.earnedBadges.has(b.id);
     const chip = document.createElement('button');
     chip.className = `badge-chip ${earned ? 'earned' : 'locked'}`;
-    chip.innerHTML = `<span class="badge-mini">${b.seal}</span><span>${earned ? b.name : `${p.have}/${p.total}`}</span>`;
-    chip.title = b.desc;
+    const pct = p.total ? (p.have / p.total) * 100 : 0;
+    chip.style.setProperty('--progress', `${pct}%`);
+    chip.innerHTML = `
+      <span class="badge-chip-head"><span class="badge-category">${b.seal}</span><span class="badge-icon" aria-hidden="true">${b.icon}</span><span class="badge-count">${p.have}/${p.total}</span></span>`;
+    chip.title = `顯示${filters[b.id]}・${b.desc}`;
     chip.setAttribute('aria-label', `${b.name}：${earned ? '已獲得' : `${p.have}/${p.total}`}`);
-    chip.addEventListener('click', () => showBadgeDetail(b));
+    connectFilter(chip, b, p);
     row.appendChild(chip);
   }
   shelf.appendChild(row);
+  const selectedBadge = shown.find(b => filters[b.id] === currentFilter);
+  if (selectedBadge) {
+    const detail = document.createElement('button');
+    detail.type = 'button';
+    detail.className = 'badge-detail-link';
+    detail.textContent = '集章詳情';
+    detail.setAttribute('aria-label', `${selectedBadge.name}・集章詳情`);
+    detail.addEventListener('click', () => showBadgeDetail(selectedBadge));
+    shelf.appendChild(detail);
+  }
 }
 
 function fmtDateKey(k) {

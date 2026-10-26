@@ -55,12 +55,16 @@
     </section>
 
     <!-- 分頁 -->
-    <nav class="tabs">
-      <button class="tab active" data-tab="gallery" onclick="switchTab('gallery')">圖鑑</button>
-      <button class="tab" data-tab="quest" onclick="switchTab('quest')">解謎</button>
+    <nav class="tabs" aria-label="集章與解謎分頁">
+      <div class="tab-group tab-group-explore" role="group" aria-label="神社探索與集章">
+        <button class="tab active" data-tab="gallery" onclick="switchTab('gallery')">圖鑑</button>
+        <button class="tab" data-tab="collected" onclick="switchTab('collected')">已集章</button>
+      </div>
       <button class="tab" data-tab="gps" onclick="switchTab('gps')">GPS 尋路</button>
-      <button class="tab" data-tab="collected" onclick="switchTab('collected')">已集章</button>
-      <button class="tab" data-tab="bag" onclick="switchTab('bag')">行囊</button>
+      <div class="tab-group tab-group-mystery" role="group" aria-label="解謎與道具">
+        <button class="tab" data-tab="quest" onclick="switchTab('quest')">解謎</button>
+        <button class="tab" data-tab="bag" onclick="switchTab('bag')">行囊</button>
+      </div>
     </nav>
 
     <!-- 圖鑑頁 -->
@@ -68,14 +72,6 @@
 
       <!-- 徽章展示 -->
       <div class="badge-shelf" id="badge-shelf" aria-label="徽章"></div>
-
-      <!-- 分類篩選列 -->
-      <div class="filter-row">
-        <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">全部</button>
-        <button class="filter-btn" data-filter="官社" onclick="setFilter('官社')">🏯 官社</button>
-        <button class="filter-btn" data-filter="縣社" onclick="setFilter('縣社')">⛩ 縣社</button>
-        <button class="filter-btn" data-filter="鄉社" onclick="setFilter('鄉社')">🏮 鄉社</button>
-      </div>
 
       <div class="grid" id="gallery-grid"></div>
     </section>

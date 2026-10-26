@@ -98,35 +98,59 @@
 }
 .badge-bar i { display: block; height: 100%; background: var(--red-dark); border-radius: 99px; }
 
-.badge-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.badge-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; width: 70%; justify-self: center; }
 .badge-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 12px 4px 4px;
+  --progress: 0%;
+  display: block;
+  min-width: 0;
+  padding: 6px 10px;
   border-radius: 99px;
   border: 1px solid var(--gold-deep);
-  background: var(--cream);
+  background: linear-gradient(to right, rgba(196,164,107,.25) var(--progress), transparent var(--progress)), var(--cream);
   font: inherit;
-  font-size: 12px;
+  font-size: 13px;
   color: var(--ink-light);
   cursor: pointer;
 }
-.badge-mini {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
+.badge-chip-head { display: flex; justify-content: center; gap: 6px; align-items: center; }
+.badge-category {
   display: grid;
   place-items: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: rgba(144,46,34,.09);
+  font-size: 11px;
   font-family: 'Noto Serif TC', serif;
-  font-size: 9px;
   font-weight: 700;
-  line-height: 1;
-  background: rgba(144,46,34,0.1);
-  color: rgba(107,56,40,0.6);
+  white-space: nowrap;
 }
-.badge-chip.earned { background: var(--red-dark); color: var(--gold); border-color: var(--red-dark); }
-.badge-chip.earned .badge-mini { background: var(--gold); color: var(--red-dark); }
+.badge-count { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.badge-icon { font-size: 14px; }
+.badge-feature.earned .badge-bar { background: rgba(242,221,181,.25); }
+.badge-feature.earned .badge-bar i { background: var(--gold-light); }
+.badge-chip.selected, .badge-feature.selected {
+  outline: 2px solid var(--red-dark);
+  outline-offset: 2px;
+}
+.badge-detail-link {
+  justify-self: center;
+  border: 0;
+  background: transparent;
+  padding: 4px 2px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink-light);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+@media (max-width: 600px) {
+  .badge-row { width: 100%; gap: 8px; }
+  .badge-chip { padding: 6px 4px; font-size: 12px; }
+  .badge-chip-head { gap: 4px; }
+}
 
 /* 徽章彈窗 */
 .badge-popup {

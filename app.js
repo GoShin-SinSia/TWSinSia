@@ -127,11 +127,10 @@ document.addEventListener('visibilitychange', () => {
    ========================================== */
 
 function setFilter(filter) {
+  const restoreFocus = document.activeElement?.matches('#badge-shelf [data-filter]');
   currentFilter = filter;
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.filter === filter);
-  });
   renderGallery();
+  if (restoreFocus) document.querySelector('#badge-shelf [aria-pressed="true"]')?.focus({ preventScroll: true });
 }
 
 function getFilteredSpots() {
@@ -270,7 +269,56 @@ function updateProgress() {
    分頁切換
    ========================================== */
 
+// A 群為淺古紙色，B 群只加深同色系；GPS 沿用上一個群組。
+let pageTone = new URLSearchParams(location.search).get('tab') === 'quest' ? 'mystery' : 'explore';
+const toneBase = document.createElement('div');
+toneBase.className = 'page-tone';
+toneBase.dataset.tone = pageTone;
+toneBase.setAttribute('aria-hidden', 'true');
+document.body.prepend(toneBase);
+let toneTransition = null;
+
+function setPageTone(tabName) {
+  const nextTone = ['quest', 'bag'].includes(tabName) ? 'mystery'
+    : ['gallery', 'collected'].includes(tabName) ? 'explore' : pageTone;
+  if (nextTone === pageTone) return;
+
+  // 快速連續切換時先收尾舊動畫，避免疊加或舊回呼覆蓋新底色。
+  if (toneTransition) toneTransition.finish();
+  pageTone = nextTone;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !toneBase.animate) {
+    toneBase.dataset.tone = nextTone;
+    return;
+  }
+
+  const wash = toneBase.cloneNode();
+  wash.classList.add('page-tone-wash');
+  wash.dataset.tone = nextTone;
+  toneBase.after(wash);
+  const button = document.querySelector(`.tab[data-tab="${tabName}"]`);
+  const rect = button.getBoundingClientRect();
+  const x = Math.max(0, Math.min(innerWidth, rect.left + rect.width / 2));
+  const y = Math.max(0, Math.min(innerHeight, rect.top + rect.height / 2));
+  const radius = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y)) + 64;
+  const animation = wash.animate([
+    { clipPath: `circle(0px at ${x + 24}px ${y + 24}px)` },
+    { clipPath: `circle(${radius}px at ${x + 24}px ${y + 24}px)` },
+  ], { duration: 1200, easing: 'cubic-bezier(.2,.65,.3,1)', fill: 'forwards' });
+  let finished = false;
+  const transition = { finish() {
+    if (finished) return;
+    finished = true;
+    toneBase.dataset.tone = nextTone;
+    wash.remove();
+    animation.cancel();
+    if (toneTransition === transition) toneTransition = null;
+  } };
+  toneTransition = transition;
+  animation.onfinish = () => transition.finish();
+}
+
 function switchTab(tabName) {
+  setPageTone(tabName);
   document.querySelectorAll('.tab').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.tab === tabName);
   });
