@@ -780,9 +780,9 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 20px;
-  animation: intro-copy-in 1s ease-out both;
 }
 .site-intro-title {
+  animation: intro-copy-in 1s ease-out both;
   font-family: 'Noto Serif TC', serif;
   font-size: clamp(40px, 10vw, 88px);
   font-weight: 700;
@@ -791,6 +791,7 @@ body {
   line-height: 1.5;
 }
 .site-intro-subtitle {
+  animation: intro-subtitle-in 1s ease-out both;
   color: var(--gold-light);
   font-size: clamp(12px, 3vw, 18px);
   letter-spacing: .08em;
@@ -807,10 +808,14 @@ body {
   from { opacity: 0; transform: translateX(-48px); }
   to { opacity: 1; transform: translateX(0); }
 }
+@keyframes intro-subtitle-in {
+  from { opacity: 0; transform: translateX(48px); }
+  to { opacity: 1; transform: translateX(0); }
+}
 @keyframes intro-fade-out {
   0%, 60% { opacity: 1; }
   100% { opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .site-intro-copy { animation: none; }
+  .site-intro-title, .site-intro-subtitle { animation: none; }
 }

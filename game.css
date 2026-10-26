@@ -678,6 +678,7 @@
 .quest-summary { margin-top: 4px; font-weight: 700; color: var(--red-dark); }
 .quest-summary:empty { display: none; }
 .quest-list { display: grid; gap: 12px; }
+#quest-shrine-grid:not(:empty) { margin-bottom: 16px; }
 
 .quest-card {
   padding: 14px;

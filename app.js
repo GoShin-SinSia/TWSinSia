@@ -142,6 +142,28 @@ function getFilteredSpots() {
    渲染：圖鑑頁
    ========================================== */
 
+function createShrineCard(spot) {
+  const ok = window.collected.has(spot.id);
+  const card = document.createElement('div');
+  card.className = `stamp-card${ok ? ' is-collected' : ''}`;
+  card.setAttribute('role', 'button');
+  card.setAttribute('tabindex', '0');
+  card.setAttribute('aria-label', `${spot.name}，${ok ? '已集章' : '尚未集章'}`);
+  card.innerHTML = `
+    <div class="stamp-badge ${ok ? 'badge-collected' : 'badge-locked'}" aria-hidden="true">${ok ? '✓' : '🔒'}</div>
+    <div class="stamp-category-tag">${spot.category}</div>
+    ${storyMark(spot.id)}
+    ${buildImgHTML(spot, !ok)}
+    <div class="stamp-name">${escapeHTML(spot.name)}</div>
+    <div class="stamp-city">${escapeHTML(spot.city)}</div>
+  `;
+  card.addEventListener('click', () => openModal(spot));
+  card.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(spot); }
+  });
+  return card;
+}
+
 function renderGallery() {
   renderBadgeShelf();
 
@@ -159,25 +181,7 @@ function renderGallery() {
   }
 
   for (const spot of spots) {
-    const ok = window.collected.has(spot.id);
-    const card = document.createElement('div');
-    card.className = `stamp-card${ok ? ' is-collected' : ''}`;
-    card.setAttribute('role', 'button');
-    card.setAttribute('tabindex', '0');
-    card.setAttribute('aria-label', `${spot.name}，${ok ? '已集章' : '尚未集章'}`);
-    card.innerHTML = `
-      <div class="stamp-badge ${ok ? 'badge-collected' : 'badge-locked'}" aria-hidden="true">${ok ? '✓' : '🔒'}</div>
-      <div class="stamp-category-tag">${spot.category}</div>
-      ${storyMark(spot.id)}
-      ${buildImgHTML(spot, !ok)}
-      <div class="stamp-name">${escapeHTML(spot.name)}</div>
-      <div class="stamp-city">${escapeHTML(spot.city)}</div>
-    `;
-    card.addEventListener('click', () => openModal(spot));
-    card.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openModal(spot); }
-    });
-    grid.appendChild(card);
+    grid.appendChild(createShrineCard(spot));
   }
 
   updateProgress();
@@ -1438,6 +1442,10 @@ function showQuestHint(list) {
 }
 
 function renderQuests() {
+  // 暫時展示這兩座神社，沿用圖鑑的卡片與詳情，不改劇情條件。
+  const shrineGrid = document.getElementById('quest-shrine-grid');
+  const featuredSpots = [101, 301].map(id => SPOTS.find(s => s.id === id)).filter(Boolean);
+  if (shrineGrid) shrineGrid.replaceChildren(...featuredSpots.map(createShrineCard));
   const listEl = document.getElementById('quest-list');
   const empty = document.getElementById('quest-empty');
   if (!listEl) return;
@@ -1450,7 +1458,7 @@ function renderQuests() {
     return { ...x, info, group };
   }).sort((a, b) => order[a.group] - order[b.group]);
 
-  empty.style.display = items.length ? 'none' : 'block';
+  empty.style.display = items.length || featuredSpots.length ? 'none' : 'block';
   const doneN = items.filter(x => x.info.q && x.info.q.doneDate).length;
   document.getElementById('quest-summary').textContent =
     items.length ? `完成 ${doneN} / ${items.length} 個任務` : '';

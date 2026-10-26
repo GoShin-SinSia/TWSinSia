@@ -111,8 +111,8 @@ function renderBadgeShelf() {
     const detail = document.createElement('button');
     detail.type = 'button';
     detail.className = 'badge-detail-link';
-    detail.textContent = '集章詳情';
-    detail.setAttribute('aria-label', `${selectedBadge.name}・集章詳情`);
+    detail.textContent = '集章提示';
+    detail.setAttribute('aria-label', `${selectedBadge.name}・集章提示`);
     detail.addEventListener('click', () => showBadgeDetail(selectedBadge));
     shelf.appendChild(detail);
   }
