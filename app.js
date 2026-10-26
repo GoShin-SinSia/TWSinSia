@@ -1473,6 +1473,10 @@ window.onGameDataLoaded = async function () {
   fillRadarTargets();
   await storiesReady;
   renderGallery(); // 劇情標記
+  // 首頁「迷走神界」入口：登入並載入玩家與劇情資料後直達解謎。
+  if (new URLSearchParams(location.search).get('tab') === 'quest') {
+    switchTab('quest');
+  }
   // 舊玩家：之前就已經集齊的，補發徽章
   const fresh = checkBadges(new Date());
   if (fresh.length) { renderGallery(); await save(); celebrateBadges(fresh); }

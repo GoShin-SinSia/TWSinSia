@@ -215,6 +215,7 @@ body {
 /* 數量 chips */
 .count-row {
   display: flex;
+  align-items: center;
   justify-content: center;
   gap: 12px;
   flex-wrap: wrap;
@@ -276,11 +277,12 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 11px 28px;
+  padding: 9px 20px;
+  margin-left: 10px;
   font-size: 14px;
   font-family: 'Noto Serif TC', serif;
   font-weight: 600;
-  letter-spacing: 3px;
+  letter-spacing: 1px;
   background: var(--red-dark);
   color: var(--gold);
   border: 1.5px solid var(--gold-deep);
@@ -323,6 +325,31 @@ body {
   background: var(--gold-light);
   color: var(--red-mid);
   box-shadow: 0 5px 20px rgba(144, 46, 34, 0.25);
+}
+
+/* 紅色橫幅與篩選框之間的主要導覽 */
+.page-nav {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px 20px;
+  flex-shrink: 0;
+}
+.page-nav .nav-btn {
+  justify-content: center;
+  white-space: nowrap;
+}
+.page-nav .nav-btn[aria-current="page"] {
+  background: var(--red-dark);
+  color: var(--gold-light);
+  border-color: var(--red-dark);
+}
+.page-nav .nav-btn:disabled {
+  background: var(--cream);
+  color: var(--ink-light);
+  box-shadow: none;
+  cursor: default;
+  opacity: .65;
 }
 
 /* =====================
@@ -617,10 +644,20 @@ body {
   .title-mobile { display: inline; }
 
   /* 按鈕框 */
+  .page-nav {
+    gap: 6px;
+    padding: 16px 12px;
+  }
+  .page-nav .nav-btn {
+    padding: 10px 12px;
+    font-size: 13px;
+    letter-spacing: 0;
+    gap: 4px;
+  }
   .controls_wrapper {
     flex-shrink: 0;
     margin: 0;
-    padding: 12px 12px 0;
+    padding: 0 12px;
   }
   #controls {
     padding: 12px;
@@ -628,12 +665,12 @@ body {
   }
   #controls::before, #controls::after { display: none; }
 
-  .count-row { flex-wrap: nowrap; gap: 6px; }
+  .count-row { flex-wrap: wrap; gap: 6px; }
   .count-chip {
-    flex: 1;
+    flex: 0 0 auto;
     justify-content: center;
     gap: 4px;
-    padding: 6px 4px;
+    padding: 6px 8px;
     font-size: 12px;
     letter-spacing: 0;
     white-space: nowrap;
@@ -642,14 +679,22 @@ body {
   .count-icon { font-size: 13px; }
 
   #controls .button_wrapper {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    justify-content: center;
     gap: 10px;
     margin-top: 10px;
   }
-  #viewAll, .nav-btn {
+  #viewAll {
     justify-content: center;
-    padding: 12px 6px;
+    padding: 8px 12px;
+    margin-left: 0;
+    font-size: 13px;
+    letter-spacing: 0;
+    white-space: nowrap;
+  }
+  .nav-btn {
+    justify-content: center;
+    padding: 12px 28px;
     font-size: 15px;
     letter-spacing: 1px;
     border-radius: 12px;
@@ -705,3 +750,67 @@ body {
 }
 
 .photo-title:empty { display: none; }
+
+/* =====================
+   首頁開場 — 文字淡入、停留後整張淡出，總長 4 秒
+   ===================== */
+.site-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 24px;
+  border: 0;
+  border-radius: 0;
+  background: var(--red-dark);
+  color: var(--cream);
+  cursor: pointer;
+  font: inherit;
+  text-align: center;
+  touch-action: manipulation;
+  animation: intro-fade-out 4.0s ease-in-out both;
+}
+.site-intro[hidden] { display: none; }
+.site-intro-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  animation: intro-copy-in 1s ease-out both;
+}
+.site-intro-title {
+  font-family: 'Noto Serif TC', serif;
+  font-size: clamp(40px, 10vw, 88px);
+  font-weight: 700;
+  letter-spacing: .16em;
+  padding-left: .16em;
+  line-height: 1.5;
+}
+.site-intro-subtitle {
+  color: var(--gold-light);
+  font-size: clamp(12px, 3vw, 18px);
+  letter-spacing: .08em;
+  line-height: 1.8;
+}
+.site-intro-hint {
+  position: absolute;
+  bottom: calc(28px + env(safe-area-inset-bottom));
+  font-size: 12px;
+  letter-spacing: .12em;
+  color: var(--gold-light);
+}
+@keyframes intro-copy-in {
+  from { opacity: 0; transform: translateX(-48px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes intro-fade-out {
+  0%, 60% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-intro-copy { animation: none; }
+}

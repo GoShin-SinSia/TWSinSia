@@ -642,6 +642,15 @@
   line-height: 1.7;
   color: var(--ink-light);
 }
+.quest-tagline {
+  margin: 0 0 10px;
+  font-family: 'Noto Serif TC', serif;
+  font-size: clamp(18px, 5vw, 22px);
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: .06em;
+  color: var(--red-dark);
+}
 .quest-summary { margin-top: 4px; font-weight: 700; color: var(--red-dark); }
 .quest-summary:empty { display: none; }
 .quest-list { display: grid; gap: 12px; }

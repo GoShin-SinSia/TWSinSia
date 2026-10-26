@@ -15,12 +15,23 @@
 
 <body>
 
+  <!-- 開場：同一分頁只播放一次，獨立於地圖載入 -->
+  <button id="site-intro" class="site-intro" type="button" hidden
+          aria-label="迷走神界 — Goshin within Shinto Shrines，點擊跳過開場">
+    <span class="site-intro-copy">
+      <span class="site-intro-title">迷走神界</span>
+      <span class="site-intro-subtitle" lang="en">Goshin within Shinto Shrines</span>
+    </span>
+    <span class="site-intro-hint">點擊任意處跳過</span>
+  </button>
+  <script src="intro.js"></script>
+
   <!-- 頂部裝飾紋路 -->
   <div class="top-border-pattern"></div>
 
   <header class="site-header">
     <div class="header-ornament">✦</div>
-    <h1><span class="title-desktop">臺灣神社模擬器</span><span class="title-mobile">消失の神界</span></h1>
+    <h1><span class="title-desktop">迷走神界</span><span class="title-mobile">消失の神界</span></h1>
     <div class="header-subtitle-line">
       <span class="line-deco"></span>
       <span class="subtitle-text">穿越時光・尋訪神祇</span>
@@ -28,6 +39,18 @@
     </div>
     <p class="header-desc">以下36個神社，你曾經去過幾個？</p>
   </header>
+
+  <nav class="page-nav" aria-label="主要導覽">
+    <a href="index.html" class="nav-btn" aria-current="page">
+      <span class="btn-icon" aria-hidden="true">🗺️</span> 神社地圖
+    </a>
+    <a href="card.html" class="nav-btn">
+      <span class="btn-icon" aria-hidden="true">🎴</span> 集點卡
+    </a>
+    <a href="card.html?tab=quest" class="nav-btn">
+      <span class="btn-icon" aria-hidden="true">🔍</span> 迷走神界
+    </a>
+  </nav>
 
   <div class="controls_wrapper">
     <div id="controls">
@@ -48,16 +71,11 @@
           <span id="xiangCount">鄉社：0</span>
         </button>
 
-      </div>
-
-      <div class="button_wrapper">
         <button id="viewAll">
           <span class="btn-icon">⊕</span> 顯示全部神社
         </button>
-        <a href="card.html" class="nav-btn">
-          <span class="btn-icon">🎴</span> 集點卡
-        </a>
       </div>
+
     </div>
   </div>
 
