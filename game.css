@@ -235,7 +235,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 14px;
+  margin-bottom: 25px;
   font-family: 'Noto Serif TC', serif;
   font-size: 13px;
   color: var(--ink-light);

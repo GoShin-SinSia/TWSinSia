@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="card.css" />
   <link rel="stylesheet" href="game.css" />
+  <link rel="stylesheet" href="shrine-chat.css" />
 </head>
 <body>
 
@@ -116,6 +117,7 @@
           <button class="check-btn" id="radar-toggle" onclick="toggleRadar()">🧭 開始追蹤</button>
           <a class="radar-gmap" id="radar-gmap" target="_blank" rel="noopener" style="visibility:hidden">Google 地圖步行導航 ↗</a>
         </div>
+        <button type="button" class="check-btn" id="chat-task-cheat" hidden onclick="completeChatTask({ cheat: true })">作弊打卡</button>
         <p class="radar-tip">追蹤時走進任何神社 50 公尺內會自動打卡。</p>
       </div>
 
@@ -239,6 +241,8 @@
   <script src="story.js"></script>
   <script src="ai.js"></script>
   <script src="badges.js"></script>
+  <script src="shrine-chat.js"></script>
+  <script src="shrine-chat-player.js"></script>
   <script src="app.js"></script>
   <script type="module" src="firebase.js"></script>
 </body>

@@ -229,12 +229,16 @@ function renderBag() {
   list.innerHTML = '';
 
   const storyCount = window.unlockedStories.size;
+  const hasChat = !!window.taiwanChat?.started;
+  const hasMemory = !!window.taiwanChat?.player?.memory;
   stats.innerHTML = `
-    <div><strong>${window.items.size}</strong><span>道具</span></div>
+    <div><strong>${window.items.size + Number(hasChat) + Number(hasMemory)}</strong><span>道具</span></div>
     <div><strong>${window.solved.size}</strong><span>解開的謎</span></div>
     <div><strong>${storyCount}</strong><span>聽過的故事</span></div>`;
 
-  empty.style.display = window.items.size ? 'none' : 'block';
+  empty.style.display = window.items.size || hasChat ? 'none' : 'block';
+  if (hasChat) appendTaiwanChatItem(list);
+  if (hasMemory) appendChatMemoryItem(list);
 
   for (const [name, it] of window.items) {
     const spot = SPOTS.find(s => s.id === it.spotId);
@@ -392,6 +396,7 @@ function fillRadarTargets() {
   if (!sel || !SPOTS.length) return;
   const keep = sel.value || String(radar.target);
   sel.innerHTML = '<option value="auto">最近的未集章神社</option>' +
+    (activeChatTaskTarget() ? `<option value="chat-task">${escapeHTML(activeChatTaskTarget().name)}</option>` : '') +
     (radar.customTarget ? `<option value="custom">🧩 ${escapeHTML(radar.customTarget.name)}</option>` : '') +
     ['官社', '縣社', '鄉社', '未分類'].map(cat => {
       const list = SPOTS.filter(s => s.category === cat);
@@ -400,6 +405,8 @@ function fillRadarTargets() {
         `<option value="${s.id}">${window.collected.has(s.id) ? '✓ ' : ''}${escapeHTML(s.name)}</option>`).join('') + '</optgroup>';
     }).join('');
   sel.value = [...sel.options].some(o => o.value === keep) ? keep : 'auto';
+  if (radar.target === 'chat-task' && !activeChatTaskTarget()) { radar.target = 'auto'; radar.lastDist = null; }
+  updateChatTaskCheatButton();
 }
 
 function setRadarTarget(value) {
@@ -408,11 +415,13 @@ function setRadarTarget(value) {
   radar.lastDist = null;
   const sel = document.getElementById('radar-target');
   if (sel) { fillRadarTargets(); sel.value = String(value); }
+  updateChatTaskCheatButton();
   drawRadar();
 }
 
 function resolveRadarTarget() {
   const t = radar.target;
+  if (t === 'chat-task') return activeChatTaskTarget();
   if (t && typeof t === 'object') return t;
   if (t !== 'auto') {
     const s = SPOTS.find(s => String(s.id) === String(t));
@@ -557,6 +566,7 @@ function drawRadar() {
 
 // 雷達追蹤中走進任何神社的範圍 → 自動打卡（每間每次開頁只觸發一次）
 function autoCheckIn(lat, lng) {
+  if (radar.target === 'chat-task') { completeChatTask({ lat, lng }); return; }
   if (storyState) return; // 劇情播放中不打擾
   const { spot, dist } = findNearest(lat, lng);
   if (!spot || dist > spot.radius || radar.autoChecked.has(spot.id)) return;
@@ -569,6 +579,12 @@ function autoCheckIn(lat, lng) {
    ========================================== */
 
 async function processCheckIn(lat, lng, { forceSpot = null } = {}) {
+  if (!forceSpot && radar.target === 'chat-task') {
+    const task = activeChatTaskTarget();
+    if (task && haversine(lat, lng, task.lat, task.lng) > task.radius) showGpsError(`尚未抵達「${task.name}」，需在 ${task.radius} 公尺內打卡。`);
+    else await completeChatTask({ lat, lng });
+    return;
+  }
   let spot, dist;
   if (forceSpot) { spot = forceSpot; dist = 0; }
   else ({ spot, dist } = findNearest(lat, lng));
@@ -647,8 +663,10 @@ async function processCheckIn(lat, lng, { forceSpot = null } = {}) {
 
 let currentModalSpot = null;
 let currentPhotoMode = 'past';
+let currentModalIsQuest = false;
 
 function openModal(spot) {
+  currentModalIsQuest = document.getElementById('tab-quest').classList.contains('active');
   currentModalSpot = spot;
   currentPhotoMode = 'past';
   const ok = window.collected.has(spot.id);
@@ -673,7 +691,20 @@ function openModal(spot) {
 
 function renderModalActions(spot) {
   const box = document.getElementById('modal-actions');
+  box.classList.toggle('quest-modal-actions', currentModalIsQuest);
   box.innerHTML = '';
+  if (currentModalIsQuest) {
+    const action = document.createElement('button');
+    action.className = 'modal-act';
+    action.textContent = spot.id === 301 ? '重置劇情' : '結局收集';
+    action.disabled = spot.id !== 301;
+    if (spot.id === 301) {
+      action.hidden = !CHAT_CHAPTER_TEST_MODE;
+      action.addEventListener('click', openChatChapterMenu);
+    }
+    box.appendChild(action);
+    return;
+  }
 
   const go = document.createElement('button');
   go.className = 'modal-act primary';
@@ -719,6 +750,10 @@ function renderModalActions(spot) {
 // Modal 裡的劇情章節列表
 function renderModalStories(spot) {
   const box = document.getElementById('modal-stories');
+  if (currentModalIsQuest && spot.id === 301) {
+    renderTaiwanChatEntry(box);
+    return;
+  }
   const variants = getStoryVariants(spot.id);
   box.innerHTML = '';
   if (!variants.length) {

@@ -34,6 +34,13 @@ document.getElementById('logout-btn').addEventListener('click', () => signOut(au
 // ── 監聽登入狀態 ──────────────────────────────
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
+    window._firebaseUser = null;
+    window.taiwanChat = null;
+    window.stopShrineChatPlayer?.();
+    document.getElementById('taiwan-chat')?.close();
+    document.getElementById('chat-memory')?.close();
+    document.getElementById('chat-memory-notice')?.close();
+    document.getElementById('chat-chapters')?.close();
     document.getElementById('login-screen').style.display = 'flex';
     document.getElementById('main-app').style.display = 'none';
     return;
@@ -49,6 +56,7 @@ onAuthStateChanged(auth, async (user) => {
   const data = snap.exists() ? snap.data() : {};
 
   window._firebaseUser   = user;
+  window.taiwanChat = data.taiwanChat || null;
   window.collected       = new Set((data.collected || []).map(Number));
   window.unlockedStories = new Map(Object.entries(data.stories || {}));
   window.items           = new Map(Object.entries(data.items || {}));
@@ -60,6 +68,7 @@ onAuthStateChanged(auth, async (user) => {
   );
 
   window.onGameDataLoaded();
+  if (window.taiwanChat?.player) window.startShrineChatPlayer?.();
 });
 
 // ── 儲存進度到 Firestore ──────────────────────
@@ -71,6 +80,7 @@ window.saveProgress = async function () {
 
   await setDoc(doc(db, 'users', user.uid), {
     collected: [...window.collected],
+    taiwanChat: window.taiwanChat || null,
     stories:   Object.fromEntries(window.unlockedStories || []),
     items:     Object.fromEntries(window.items || []),
     solved:    [...(window.solved || [])],
