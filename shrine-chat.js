@@ -115,13 +115,27 @@ function openTaiwanChat() {
           <div class="chat-cover" aria-hidden="true"></div>
           <div class="chat-profile-body">
             <span class="chat-avatar chat-avatar-large" aria-hidden="true">人</span>
-            <h2 class="chat-display-name"></h2><p class="chat-caption">角色資料準備中</p>
+            <h2 class="chat-display-name"></h2><button type="button" class="chat-caption chat-profile-photo-link" data-profile-photo>IMG-0306</button>
             <section class="chat-profile-section"><h3>關於我</h3><p>簡介尚未公開。</p></section>
-            <section class="chat-profile-section"><h3>關注</h3><div class="chat-profile-placeholder">尚無公開的關注內容</div></section>
+            <section class="chat-profile-section"><h3>關注</h3><div data-profile-following></div></section>
             <section class="chat-profile-section"><h3>貼文</h3><div class="chat-profile-placeholder">尚無貼文<p>後續內容將顯示在這裡。</p></div></section>
           </div>
         </div>
       </section>`;
+    const photoScreen = document.createElement('section');
+    photoScreen.className = 'chat-screen chat-photo-screen';
+    photoScreen.dataset.screen = 'profile-photo';
+    photoScreen.hidden = true;
+    photoScreen.innerHTML = `<header class="chat-header"><button type="button" data-photo-back>← 返回個人頁</button><span>IMG-0306</span><button type="button" data-chat-close aria-label="關閉聊天室">關閉</button></header><div class="chat-photo-view"><svg class="chat-profile-photo" viewBox="0 0 774 1024" role="img" aria-label="IMG-0306"><image href="stories/台灣神宮/photo.png" width="1536" height="1024"/></svg></div>`;
+    photoScreen.insertAdjacentHTML('beforeend', '<div class="chat-photo-controls"><button type="button" data-photo-zoom="out" aria-label="縮小照片">−</button><button type="button" data-photo-zoom="in" aria-label="放大照片">＋</button><button type="button" data-photo-fit>全圖</button></div>');
+    dialog.appendChild(photoScreen);
+    setupChatPhotoViewer(photoScreen);
+    dialog.querySelector('[data-profile-photo]').addEventListener('click', () => showTaiwanChatScreen('profile-photo'));
+    photoScreen.querySelector('[data-photo-back]').addEventListener('click', () => {
+      showTaiwanChatScreen('profile');
+      dialog.querySelector('[data-profile-photo]').focus();
+    });
+    appendRelicsArticle(dialog);
     document.body.appendChild(dialog);
     dialog.addEventListener('close', resetChatBlankWait);
     dialog.addEventListener('cancel', resetChatBlankWait);
@@ -142,12 +156,17 @@ function openTaiwanChat() {
 
 function showTaiwanChatScreen(screen) {
   resetChatBlankWait();
+  if (['article', 'name-history', 'nasu-paintings', 'taipei-travel', 'treasure-log', 'grand-hotel-photos'].includes(screen) && !hasRelicsArticle()) screen = 'profile';
   if (window.taiwanChat?.player?.removed) screen = 'list';
+  if (screen === 'profile') renderChatFollowing();
+  if (screen === 'profile' || screen === 'profile-photo') renderChatProfilePhoto();
   const dialog = document.getElementById('taiwan-chat');
   dialog.querySelectorAll('[data-screen]').forEach(section => {
     section.hidden = section.dataset.screen !== screen;
   });
   dialog.querySelector(`[data-screen="${screen}"] button`)?.focus();
+  if (screen === 'profile-photo') dialog.querySelector('[data-screen="profile-photo"]').resetPhotoView();
+  if (screen === 'profile') requestAnimationFrame(fillChatPhotoLabel);
   if (screen === 'chat') { tickShrineChat(); renderShrineChatPlayer(true); }
   renderChatEnding();
 }
@@ -194,7 +213,7 @@ function openChatChapterMenu() {
     dialog.setAttribute('aria-label', '測試章節選擇');
     dialog.innerHTML = '<h2>測試章節選擇</h2><p>跳章會取代目前劇情進度，清除後續進度與「回憶」。一般集章及其他道具會保留。</p><div class="chat-chapter-buttons"></div><p class="chat-chapter-status" role="status"></p>';
     const choices = dialog.querySelector('.chat-chapter-buttons');
-    ['重置／第一章', '第二章', '第三章', '第四章'].forEach((label, index) => {
+    ['重置／第一章', '第二章', '第三章', '第四章', '完結'].forEach((label, index) => {
       const button = chatAction(label, () => selectChatChapter(index + 1, dialog));
       choices.appendChild(button);
     });
@@ -207,7 +226,7 @@ function openChatChapterMenu() {
 }
 
 async function selectChatChapter(chapter, dialog) {
-  if (!CHAT_CHAPTER_TEST_MODE || chatChapterBusy || taiwanChatSaving || ![1, 2, 3, 4].includes(chapter)) return;
+  if (!CHAT_CHAPTER_TEST_MODE || chatChapterBusy || taiwanChatSaving || ![1, 2, 3, 4, 5].includes(chapter)) return;
   chatChapterBusy = true;
   const owner = window._firebaseUser;
   const buttons = dialog.querySelectorAll('button');
@@ -218,11 +237,11 @@ async function selectChatChapter(chapter, dialog) {
     let next = null;
     if (chapter > 1) {
       // 先完整讀取並驗證，任何一份缺失都不覆寫目前進度。
-      const stages = await Promise.all(Array.from({ length: chapter }, (_, index) => loadChatStage(index + 1)));
+      const stages = await Promise.all(Array.from({ length: Math.min(chapter, 4) }, (_, index) => loadChatStage(index + 1)));
       const missing = stages.findIndex(rows => !rows);
       if (missing !== -1) throw new Error(`第 ${missing + 1} 章檔案尚未提供`);
       const now = Date.now();
-      const player = { stage: chapter, index: 0, messages: [], tasks: {}, unread: false, gate: false, dueAt: 0, typingAt: 0, nickname: chapter >= 3 ? '加藤' : '' };
+      const player = { stage: Math.min(chapter, 4), index: 0, messages: [], tasks: {}, unread: false, gate: false, dueAt: 0, typingAt: 0, nickname: chapter >= 3 ? '加藤' : '' };
       for (let stage = 1; stage < chapter; stage++) {
         for (const row of stages[stage - 1]) {
           if (['npc', 'player', 'type'].includes(row.type)) {
@@ -232,8 +251,14 @@ async function selectChatChapter(chapter, dialog) {
         const task = CHAT_STAGE_TASKS[stage];
         if (task) player.tasks[task.id] = { activatedAt: now, completedAt: now };
       }
-      const first = stages[chapter - 1][0];
-      if (['npc', 'think'].includes(first.type)) {
+      const first = stages[Math.min(chapter, 4) - 1][0];
+      if (chapter === 5) {
+        player.index = stages[3].length;
+        player.messages = [];
+        player.removed = true;
+        player.completed = true;
+        player.rewardNotice = true;
+      } else if (['npc', 'think'].includes(first.type)) {
         player.typingAt = now + CHAT_WAIT_MS;
         player.dueAt = player.typingAt + first.seconds * 1000;
       }
@@ -250,4 +275,104 @@ async function selectChatChapter(chapter, dialog) {
     chatChapterBusy = false;
     buttons.forEach(button => { button.disabled = false; });
   }
+}
+
+function renderChatProfilePhoto() {
+  const dialog = document.getElementById('taiwan-chat');
+  if (!dialog) return;
+  const burnt = !!window.taiwanChat?.player?.tasks?.['taiwan-stage3-memory'];
+  const label = burnt ? 'IMG-03066666666666666666666' : 'IMG-0306';
+  dialog.querySelector('[data-profile-photo]').textContent = label;
+  const screen = dialog.querySelector('[data-screen="profile-photo"]');
+  screen.querySelector('.chat-header > span').textContent = label;
+  const photo = screen.querySelector('.chat-profile-photo');
+  photo.setAttribute('aria-label', label);
+  screen.dataset.burnt = String(burnt);
+  photo.querySelector('image').setAttribute('href', burnt ? 'stories/台灣神宮/burnt.png' : 'stories/台灣神宮/photo.png');
+}
+
+function fillChatPhotoLabel() {
+  const link = document.querySelector('[data-profile-photo]');
+  if (!link || !link.offsetWidth || !window.taiwanChat?.player?.tasks?.['taiwan-stage3-memory']) return;
+  const parentStyle = getComputedStyle(link.parentElement);
+  const width = link.parentElement.clientWidth - parseFloat(parentStyle.paddingLeft) - parseFloat(parentStyle.paddingRight);
+  const measure = document.createElement('span');
+  measure.style.cssText = 'position:absolute;visibility:hidden;white-space:nowrap;pointer-events:none';
+  link.appendChild(measure);
+  const style = getComputedStyle(link);
+  measure.style.font = style.font;
+  measure.style.letterSpacing = style.letterSpacing;
+  let label = 'IMG-0306';
+  measure.textContent = label + '6';
+  while (measure.getBoundingClientRect().width <= width - 2 && label.length < 500) {
+    label += '6';
+    measure.textContent = label + '6';
+  }
+  link.textContent = label;
+}
+
+function setupChatPhotoViewer(screen) {
+  const svg = screen.querySelector('.chat-profile-photo');
+  let box, fitWidth;
+  const pointers = new Map();
+  function draw() { svg.setAttribute('viewBox', `${box.x} ${box.y} ${box.w} ${box.h}`); }
+  function fit(closeUp = false) {
+    const rect = svg.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const burnt = screen.dataset.burnt === 'true';
+    const ratio = rect.width / rect.height;
+    const contentWidth = burnt ? 820 : 774;
+    fitWidth = Math.max(contentWidth, 1024 * ratio);
+    const w = closeUp && burnt ? Math.max(280, 340 * ratio) : fitWidth;
+    const h = w / ratio;
+    const cx = closeUp && burnt ? 680 : contentWidth / 2;
+    const cy = closeUp && burnt ? 380 : 512;
+    box = {x: cx-w/2, y: cy-h/2, w, h};
+    pointers.clear();
+    draw();
+  }
+  function zoom(factor, px = .5, py = .5) {
+    if (!box) return;
+    const w = Math.max(fitWidth / 12, Math.min(fitWidth * 2, box.w * factor));
+    const h = w * box.h / box.w;
+    box = {x: box.x + (box.w-w)*px, y: box.y + (box.h-h)*py, w, h};
+    draw();
+  }
+  screen.resetPhotoView = () => fit(true);
+  screen.querySelector('[data-photo-fit]').addEventListener('click', () => fit());
+  screen.querySelector('[data-photo-zoom="in"]').addEventListener('click', () => zoom(.8));
+  screen.querySelector('[data-photo-zoom="out"]').addEventListener('click', () => zoom(1.25));
+  svg.addEventListener('wheel', event => {
+    event.preventDefault();
+    const r = svg.getBoundingClientRect();
+    zoom(Math.exp(event.deltaY * .002), (event.clientX-r.left)/r.width, (event.clientY-r.top)/r.height);
+  }, {passive: false});
+  svg.addEventListener('pointerdown', event => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    svg.setPointerCapture(event.pointerId);
+    pointers.set(event.pointerId, {x:event.clientX, y:event.clientY});
+  });
+  svg.addEventListener('pointermove', event => {
+    if (!pointers.has(event.pointerId) || !box) return;
+    const before = [...pointers.values()];
+    const old = pointers.get(event.pointerId);
+    pointers.set(event.pointerId, {x:event.clientX, y:event.clientY});
+    const after = [...pointers.values()];
+    const r = svg.getBoundingClientRect();
+    if (before.length === 2) {
+      const distance = points => Math.hypot(points[0].x-points[1].x, points[0].y-points[1].y);
+      const oldDistance = distance(before), newDistance = distance(after);
+      const cx = (before[0].x+before[1].x)/2, cy = (before[0].y+before[1].y)/2;
+      if (oldDistance > 0 && newDistance > 0) zoom(oldDistance/newDistance, (cx-r.left)/r.width, (cy-r.top)/r.height);
+      box.x -= ((after[0].x+after[1].x)/2-cx)*box.w/r.width;
+      box.y -= ((after[0].y+after[1].y)/2-cy)*box.h/r.height;
+    } else {
+      box.x -= (event.clientX-old.x)*box.w/r.width;
+      box.y -= (event.clientY-old.y)*box.h/r.height;
+    }
+    draw();
+  });
+  for (const type of ['pointerup','pointercancel','lostpointercapture']) svg.addEventListener(type, event => pointers.delete(event.pointerId));
+  new ResizeObserver(() => { if (!screen.hidden) fit(true); }).observe(svg);
+  new ResizeObserver(fillChatPhotoLabel).observe(screen.parentElement.querySelector('[data-profile-photo]').parentElement);
 }

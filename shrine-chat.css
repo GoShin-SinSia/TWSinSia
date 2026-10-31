@@ -92,8 +92,9 @@
 .chat-memory-dialog { margin: auto; width: min(500px, calc(100% - 48px)); max-height: 90dvh; overflow-y: auto; padding: 24px; box-sizing: border-box; border: 1px solid var(--gold-deep); border-radius: 18px; background: var(--cream); color: var(--ink); text-align: center; }
 .chat-memory-dialog::backdrop { background: #28160dbb; }
 .chat-memory-dialog button { padding: 10px 20px; border: 1px solid var(--gold-deep); border-radius: 8px; background: transparent; color: var(--ink); font: inherit; cursor: pointer; }
-.chat-memory-photo { aspect-ratio: 4 / 3; background: #eadfcf; border: 1px solid #c4a46b55; }
-.chat-memory-caption { margin: 36px 0 24px; font-size: 13px; line-height: 1.8; }
+.chat-memory-viewer { width: fit-content; max-width: calc(100vw - 32px); padding: 16px; }
+.chat-memory-photo { display: block; width: auto; height: auto; max-width: min(900px, calc(100vw - 66px)); max-height: calc(90dvh - 170px); margin: auto; object-fit: contain; box-sizing: border-box; border: 1px solid #c4a46b55; }
+.chat-memory-caption { margin: 36px 0 24px; font-size: 15px; line-height: 1.8; }
 @media (prefers-reduced-motion: reduce) { .chat-text-cursor { animation: none; } }
 
 .chat-chapter-buttons { display: grid; gap: 12px; margin: 20px 0; }
@@ -106,3 +107,60 @@
 .chat-blackout::backdrop { background: #000; }
 
 #chat-memory-notice .chat-action { margin-top: 25px; }
+
+/* 加藤關注的站內文章：2-hint 至 3-hint 之間可見。 */
+.shrine-chat .profile-followed-article { display: flex; align-items: center; gap: 12px; width: 100%; padding: 16px 12px; text-align: left; border: 1px solid #d9bea6; background: #fffaf3; }
+.profile-followed-avatar, .relics-avatar { display: grid; place-items: center; flex-shrink: 0; width: 42px; height: 42px; border-radius: 50%; background: #f1d7d4; color: #9a535b; font-family: 'Noto Serif TC', serif; }
+.profile-followed-article strong { display: block; font-size: 14px; font-weight: 500; text-decoration: underline; text-underline-offset: 4px; }
+.profile-followed-article small { display: block; margin-top: 8px; font-size: 11px; color: #927b66; }
+.profile-followed-article > span:last-child { margin-left: auto; }
+.relics-site { background: #fffaf7; color: #513b39; }
+.relics-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 14px 18px; border-bottom: 1px solid #ead6ce; background: #faeeea; font-size: 12px; flex-shrink: 0; }
+.relics-toolbar > span { color: #996f72; }
+.relics-scroll { overflow-y: auto; flex: 1; min-height: 0; }
+.relics-article { max-width: 560px; margin: auto; padding: 32px 28px; font-size: 14px; line-height: 1.9; }
+.relics-article .relics-eyebrow { margin: 0 0 14px; color: #ac7075; font-size: 11px; letter-spacing: .12em; }
+.relics-article h1 { margin: 0 0 22px; font-family: 'Noto Serif TC', serif; font-size: 30px; font-weight: 700; line-height: 1.5; color: #593939; }
+.relics-author { display: flex; gap: 12px; align-items: center; margin-bottom: 26px; }
+.relics-author strong { display: block; font-size: 13px; font-weight: 500; }
+.relics-author div > span { display: block; font-size: 11px; color: #9a7878; }
+.relics-article > p { margin: 22px 0; }
+.relics-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin: 26px 0; font-size: 13px; text-align: left; }
+.relics-table th, .relics-table td { padding: 13px 10px; border-bottom: 1px solid #eadbd4; vertical-align: top; overflow-wrap: anywhere; }
+.relics-table thead th { font-weight: 500; color: #9b6267; background: #f6e8e2; font-size: 12px; }
+.relics-table th:first-child { width: 43%; }
+.relics-table tbody th { font-weight: 400; }
+.relics-note { display: block; font-size: 11px; color: #947576; }
+.relics-aside { padding: 18px; border-left: 3px solid #d7a5a6; background: #f8efea; font-size: 13px; }
+.relics-signoff { color: #956368; }
+.relics-footer { border-top: 1px solid #eadbd4; padding-top: 20px; }
+.shrine-chat .relics-like { display: inline-flex; align-items: center; gap: 8px; padding: 9px 18px; border: 1px solid #d8c7c3; border-radius: 99px; color: #9b8b88; background: #fffaf7; font-size: 13px; }
+.relics-like svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.shrine-chat .relics-like[aria-pressed="true"] { color: #b34660; border-color: #c87588; background: #fbe0e7; }
+.relics-like[aria-pressed="true"] svg { fill: #efb4c3; }
+@media (max-width: 480px) { .relics-article { padding: 26px 18px; } .relics-article h1 { font-size: 27px; } .relics-table th, .relics-table td { padding: 12px 6px; } .relics-toolbar { padding: 12px; } }
+
+[data-profile-following] { display: grid; gap: 12px; }
+
+.profile-avatar-blue { background: #d7e9fa; color: #35658c; }
+.relics-article h2 { margin: 28px 0 12px; font-size: 17px; line-height: 1.7; }
+
+.profile-tour-photo { margin: 28px 0; }
+.profile-broken-photo { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 26px; border: 1px solid #b7b7b7; background: #f5f5f5; color: #777; vertical-align: middle; }
+.profile-broken-photo svg { width: 24px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linejoin: round; }
+.profile-tour-photo figcaption { margin-top: 12px; }
+
+.shrine-chat .chat-profile-photo-link { padding: 0; border: 0; background: none; color: #927b66; font-size: 13px; line-height: 1.8; text-decoration: underline; text-underline-offset: 3px; }
+.chat-photo-view { flex: 1; min-height: 0; min-width: 0; display: flex; align-items: center; justify-content: center; padding: 12px; background: #241c18; overflow: hidden; }
+.chat-photo-view .chat-profile-photo { display: block; width: 100%; height: 100%; min-height: 0; overflow: hidden; }
+
+.chat-photo-screen .chat-header > span { min-width: 0; overflow-wrap: anywhere; text-align: center; }
+
+.chat-photo-screen { position: relative; }
+.chat-photo-view .chat-profile-photo { touch-action: none; cursor: grab; user-select: none; }
+.chat-photo-view .chat-profile-photo:active { cursor: grabbing; }
+.chat-photo-controls { display: flex; justify-content: center; gap: 12px; padding: 10px; background: #241c18; }
+.shrine-chat .chat-photo-controls button { background: #f5e9d4; color: #513b39; padding: 8px 16px; }
+.chat-profile-photo-link { max-width: 100%; white-space: nowrap; }
+
+.shrine-chat .chat-profile-photo-link { box-sizing: border-box; width: 100%; max-width: 100%; min-width: 0; overflow: hidden; text-align: left; }

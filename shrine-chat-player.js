@@ -579,9 +579,9 @@ function openChatMemory() {
   if (!dialog) {
     dialog = document.createElement('dialog');
     dialog.id = 'chat-memory';
-    dialog.className = 'chat-memory-dialog';
+    dialog.className = 'chat-memory-dialog chat-memory-viewer';
     dialog.setAttribute('aria-label', '回憶');
-    dialog.innerHTML = '<div class="chat-memory-photo" role="img" aria-label="照片位置，尚未放入照片"></div><p class="chat-memory-caption">你拯救了一個彌留中的靈魂</p>';
+    dialog.innerHTML = '<img class="chat-memory-photo" src="stories/台灣神宮/memory.png" alt="回憶照片"><p class="chat-memory-caption">你拯救了一個彌留中的靈魂</p>';
     dialog.appendChild(chatAction('關閉', () => dialog.close()));
     document.body.appendChild(dialog);
   }
