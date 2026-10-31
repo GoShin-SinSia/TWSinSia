@@ -779,3 +779,11 @@
   .site-title .t-line { display: block; }
   .header-inner { gap: 10px; }
 }
+
+/* 體驗日提示（神社詳情） */
+.modal-story-hint.experience {
+  margin-bottom: 8px;
+  border-style: solid;
+  background: rgba(227,194,151,0.22);
+  color: var(--ink);
+}

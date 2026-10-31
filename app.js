@@ -18,6 +18,36 @@ if (!window.quests) window.quests = new Map();                   // 'spotId:key'
 const DEBUG = new URLSearchParams(location.search).has('debug');
 const ONSITE_DEFAULT_RADIUS = 60;
 
+/* ==========================================
+   體驗日：指定日期當天，指定神社的劇情不用打卡就能聽
+   - 在神社詳情裡列出所有寫好的劇情，點了直接播放
+   - 不會集章、不會記錄解鎖、不會給道具、不會存解謎進度
+   - 想延長或換神社：改這裡的日期或編號即可；要關掉就把陣列清空
+   - 測試別天：card.html?date=2026-11-1
+   ========================================== */
+const EXPERIENCE_DAYS = [
+  { date: '2026-11-01', spots: [101] },
+];
+
+function isExperienceDay(spotId, date = getStoryDate()) {
+  const today = toDateKey(date);
+  return EXPERIENCE_DAYS.some(d =>
+    d.date.replace(/\//g, '-').split('-').map(Number).join('-') === today && d.spots.includes(spotId));
+}
+
+// 體驗時用劇情本來的日子播放（例如「每月=15」就當作這個月 15 日），{month} 等文字才對得上
+function experienceDateFor(v, base = getStoryDate()) {
+  const w = v.when || {};
+  const y = base.getFullYear();
+  if (w.dates && w.dates.length) {
+    const [m, d] = w.dates[0].split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
+  if (w.day && w.day.length) return new Date(y, base.getMonth(), w.day[0]);
+  if (w.months && w.months.length) return new Date(y, w.months[0] - 1, 1);
+  return base;
+}
+
 let currentFilter = 'all';
 let pendingBadges = []; // 劇情播完再慶祝
 
@@ -756,6 +786,10 @@ function renderModalStories(spot) {
   }
   const variants = getStoryVariants(spot.id);
   box.innerHTML = '';
+  if (isExperienceDay(spot.id) && variants.some(v => !v.ai)) {
+    renderExperienceStories(box, spot, variants.filter(v => !v.ai));
+    return;
+  }
   if (!variants.length) {
     // 沒寫劇情、但 AI 開著
     if (typeof AI_CONFIG !== 'undefined' && AI_CONFIG.mode !== 'off' && !hasWrittenStories(spot.id)) {
@@ -795,6 +829,25 @@ function renderModalStories(spot) {
       ? `還有 ${lockedCount} 段劇情，要在特別的日子、或帶著特別的東西來才聽得到。`
       : `🔒 這裡有 ${lockedCount} 段劇情，親自前來就能解鎖。`;
     box.appendChild(hint);
+  }
+}
+
+// 體驗日：列出全部劇情，不用打卡就能播放
+function renderExperienceStories(box, spot, variants) {
+  box.style.display = 'block';
+  const hint = document.createElement('div');
+  hint.className = 'modal-story-hint experience';
+  hint.textContent = '🦊 今日體驗開放：不用到現場，也能聽聽這裡的故事。（體驗不會集章，也不會留下紀錄）';
+  box.appendChild(hint);
+  for (const v of variants) {
+    const btn = document.createElement('button');
+    btn.className = 'modal-story-btn';
+    btn.textContent = `${isQuestVariant(v) ? '🧩' : '📜'} ${v.title}`;
+    const small = document.createElement('small');
+    small.textContent = describeWhen(v.when) || '體驗';
+    btn.appendChild(small);
+    btn.addEventListener('click', () => openStory(spot, v, { date: experienceDateFor(v), experience: true }));
+    box.appendChild(btn);
   }
 }
 
@@ -901,7 +954,8 @@ function openStory(spot, variant, opts = {}) {
   if (!variant || !variant.lines.length) return false;
   stopOnsiteWatch();
   const qKey = storyKey(spot.id, variant);
-  const isQuest = isQuestVariant(variant) && !variant.ai;
+  // 體驗模式不存解謎進度，當成一般劇情播放
+  const isQuest = isQuestVariant(variant) && !variant.ai && !opts.experience;
   storyState = {
     spot, variant,
     date: opts.date || getStoryDate(),
@@ -910,6 +964,7 @@ function openStory(spot, variant, opts = {}) {
     passed: false, // 目前這個互動節點是否已通過
     wrong: 0, hintShown: 0,
     quest: isQuest ? qKey : null,
+    experience: !!opts.experience,
   };
 
   // 解謎任務：讀取或建立存檔
@@ -937,6 +992,13 @@ function openStory(spot, variant, opts = {}) {
     tag.className = 'story-ai-tag';
     tag.textContent = 'AI';
     tag.title = AI_CONFIG.label;
+    title.appendChild(tag);
+  }
+  if (opts.experience) {
+    const tag = document.createElement('span');
+    tag.className = 'story-ai-tag';
+    tag.textContent = '體驗';
+    tag.title = '體驗模式：不會集章，也不會留下紀錄';
     title.appendChild(tag);
   }
 
@@ -1175,7 +1237,7 @@ function renderAsk(line, box) {
 
   const pass = (revealed) => {
     storyState.passed = true;
-    if (!revealed && !window.solved.has(pid)) window.solved.add(pid);
+    if (!revealed && !storyState.experience && !window.solved.has(pid)) window.solved.add(pid);
     saveQuestNow();
     form.innerHTML = `<div class="story-correct">${revealed ? '答案是' : '✓ 答對了！'}「${escapeHTML(answers[0] || '')}」</div>`;
     box.querySelector('.story-ask-tools').remove();
@@ -1237,7 +1299,7 @@ function renderOnsite(line, box) {
       <div class="story-ask-tools">
         <button type="button" class="story-btn primary" data-act="here">📍 我到了</button>
         ${already ? '<button type="button" class="story-btn ghost" data-act="skip">已完成過，繼續</button>' : ''}
-        ${DEBUG ? '<button type="button" class="story-btn ghost" data-act="debug">🧪 略過</button>' : ''}
+        ${DEBUG || storyState.experience ? `<button type="button" class="story-btn ghost" data-act="debug">${storyState.experience ? '🦊 體驗：略過這關' : '🧪 略過'}</button>` : ''}
       </div>
       ${line.hints.length ? `<div class="story-hints">${line.hints.map(h => `<p>💡 ${escapeHTML(fillText(h))}</p>`).join('')}</div>` : ''}
     </div>`;
@@ -1246,7 +1308,7 @@ function renderOnsite(line, box) {
   const pass = (record = true) => {
     stopOnsiteWatch();
     storyState.passed = true;
-    if (record && !window.solved.has(pid)) { window.solved.add(pid); save(); }
+    if (record && !storyState.experience && !window.solved.has(pid)) { window.solved.add(pid); save(); }
     status.textContent = '✓ 抵達了';
     status.classList.add('ok');
     box.querySelector('.story-ask-tools').remove();
@@ -1293,8 +1355,9 @@ function renderOnsite(line, box) {
 /* ---------- 道具 ---------- */
 function renderItem(line, box) {
   const name = (line.param || '').trim() || '神秘的東西';
+  const trial = storyState.experience;
   const isNew = !window.items.has(name);
-  if (isNew) {
+  if (isNew && !trial) {
     window.items.set(name, {
       desc: fillText(line.text),
       spotId: storyState.spot.id,
@@ -1307,7 +1370,7 @@ function renderItem(line, box) {
     <div class="story-item ${isNew ? 'new' : ''}">
       <div class="story-item-icon">${line.image ? `<img src="${escapeHTML(line.image)}" alt="" onerror="this.replaceWith('🎁')">` : '🎁'}</div>
       <div>
-        <div class="story-item-label">${isNew ? '獲得道具' : '已持有'}</div>
+        <div class="story-item-label">${trial && isNew ? '體驗中看到的道具（不會放進行囊）' : isNew ? '獲得道具' : '已持有'}</div>
         <div class="story-item-name">${escapeHTML(name)}</div>
       </div>
     </div>`;
